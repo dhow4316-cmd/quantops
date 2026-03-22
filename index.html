@@ -525,10 +525,12 @@ function fetchFG() {
 }
 
 // ── ORACLE MACRO NEWS ──
+// Uses rss2json.com API (no CORS issues) + CoinGecko news as fallback
+var RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 var MACRO_FEEDS = [
-  { name: 'CoinDesk',    url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', type: 'rss' },
-  { name: 'CryptoNews',  url: 'https://cryptonews.com/news/feed/', type: 'rss' },
-  { name: 'Decrypt',     url: 'https://decrypt.co/feed', type: 'rss' }
+  { name: 'CoinDesk',   url: 'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { name: 'Decrypt',    url: 'https://decrypt.co/feed' },
+  { name: 'CoinTelegraph', url: 'https://cointelegraph.com/rss' }
 ];
 
 function fetchMacroNews() {
@@ -539,42 +541,93 @@ function fetchMacroNews() {
   btn.disabled = true;
   status.style.display = 'block';
   status.style.color = 'var(--accent)';
-  status.textContent = 'Pulling macro headlines from crypto news feeds...';
+  status.textContent = 'Pulling live crypto macro headlines...';
   headlines.innerHTML = '';
 
   var allItems = [];
   var done = 0;
 
-  MACRO_FEEDS.forEach(function(feed) {
-    var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feed.url);
+  function tryFeed(feed, proxyIdx) {
+    // Try rss2json first, then allorigins, then corsproxy
+    var proxies = [
+      RSS2JSON + encodeURIComponent(feed.url) + '&api_key=&count=8',
+      'https://api.allorigins.win/get?url=' + encodeURIComponent(feed.url),
+      'https://corsproxy.io/?' + encodeURIComponent(feed.url)
+    ];
+    if (proxyIdx >= proxies.length) {
+      done++;
+      if (done === MACRO_FEEDS.length) renderMacroNews(allItems, btn, status);
+      return;
+    }
     var ctrl = new AbortController();
-    var timer = setTimeout(function() { ctrl.abort(); }, 8000);
-    fetch(proxyUrl, { signal: ctrl.signal })
-      .then(function(r) { clearTimeout(timer); return r.text(); })
-      .then(function(text) {
-        var parser = new DOMParser();
-        var xml = parser.parseFromString(text, 'text/xml');
-        var items = xml.querySelectorAll('item');
-        items.forEach(function(item, i) {
-          if (i >= 5) return; // max 5 per feed
-          var title = item.querySelector('title') ? item.querySelector('title').textContent.trim() : '';
-          var link = item.querySelector('link') ? item.querySelector('link').textContent.trim() : '';
-          var pubDate = item.querySelector('pubDate') ? item.querySelector('pubDate').textContent.trim() : '';
-          var desc = item.querySelector('description') ? item.querySelector('description').textContent.replace(/<[^>]+>/g, '').trim().slice(0, 120) : '';
-          if (title) allItems.push({ source: feed.name, title: title, link: link, pubDate: pubDate, desc: desc });
-        });
+    var timer = setTimeout(function() { ctrl.abort(); }, 9000);
+    fetch(proxies[proxyIdx], { signal: ctrl.signal })
+      .then(function(r) { clearTimeout(timer); return r.json(); })
+      .then(function(data) {
+        // rss2json returns data.items array
+        if (data && data.items && data.items.length > 0) {
+          data.items.slice(0, 6).forEach(function(item) {
+            var title = (item.title || '').trim();
+            var link = item.link || item.url || '';
+            var desc = (item.description || item.content || '').replace(/<[^>]+>/g, '').trim().slice(0, 130);
+            if (title) allItems.push({ source: feed.name, title: title, link: link, desc: desc });
+          });
+          done++;
+          if (done === MACRO_FEEDS.length) renderMacroNews(allItems, btn, status);
+        } else if (data && data.contents) {
+          // allorigins wraps in .contents as XML string
+          try {
+            var parser = new DOMParser();
+            var xml = parser.parseFromString(data.contents, 'text/xml');
+            var items = xml.querySelectorAll('item');
+            var count = 0;
+            items.forEach(function(item) {
+              if (count >= 6) return;
+              var title = item.querySelector('title') ? item.querySelector('title').textContent.trim() : '';
+              var link = item.querySelector('link') ? item.querySelector('link').textContent.trim() : '';
+              var desc = item.querySelector('description') ? item.querySelector('description').textContent.replace(/<[^>]+>/g, '').trim().slice(0,130) : '';
+              if (title) { allItems.push({ source: feed.name, title: title, link: link, desc: desc }); count++; }
+            });
+          } catch(e) {}
+          done++;
+          if (done === MACRO_FEEDS.length) renderMacroNews(allItems, btn, status);
+        } else {
+          tryFeed(feed, proxyIdx + 1);
+        }
       })
-      .catch(function() {})
-      .finally(function() {
-        done++;
-        if (done === MACRO_FEEDS.length) { renderMacroNews(allItems, btn, status); }
-      });
-  });
+      .catch(function() { tryFeed(feed, proxyIdx + 1); });
+  }
+
+  // Also pull from CoinGecko news (no CORS issues, native JSON)
+  var cgCtrl = new AbortController();
+  setTimeout(function() { cgCtrl.abort(); }, 8000);
+  fetch('https://api.coingecko.com/api/v3/news?per_page=8', { signal: cgCtrl.signal })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && Array.isArray(data.data)) {
+        data.data.slice(0, 8).forEach(function(item) {
+          if (item.title) allItems.push({ source: 'CoinGecko', title: item.title, link: item.url || '', desc: item.description ? item.description.slice(0,130) : '' });
+        });
+      }
+    })
+    .catch(function() {})
+    .finally(function() {
+      // CoinGecko is bonus — don't block on it
+    });
+
+  MACRO_FEEDS.forEach(function(feed) { tryFeed(feed, 0); });
+
+  // Fallback: if all fail after 12s, show CoinGecko-only results or error
+  setTimeout(function() {
+    if (btn.disabled) {
+      renderMacroNews(allItems, btn, status);
+    }
+  }, 12000);
 }
 
 // Macro keywords ORACLE watches for
-var MACRO_BULL = ['rate cut','fed pivot','inflation falls','dollar weakens','dxy down','risk-on','btc etf','inflows','accumulation','bullish'];
-var MACRO_BEAR = ['rate hike','inflation','war','geopolit','dollar rises','dxy','risk-off','sell-off','crash','fed hike','outflows','bearish','recession','oil spike'];
+var MACRO_BULL = ['rate cut','fed pivot','inflation falls','dollar weak','dxy down','risk-on','btc etf','etf inflow','accumulation','bullish','rally','breakout','surge','all-time','ath','inflow','institutional buy'];
+var MACRO_BEAR = ['rate hike','inflation','war','geopolit','dollar rise','dxy','risk-off','sell-off','crash','fed hike','outflow','bearish','recession','oil spike','dump','breakdown','liquidat','ban','crackdown','fear'];
 
 function scoreMacroHeadline(title) {
   var t = title.toLowerCase();
@@ -591,10 +644,19 @@ function renderMacroNews(items, btn, status) {
   var headlines = document.getElementById('macro-headlines');
 
   if (items.length === 0) {
-    status.style.color = 'var(--muted)';
-    status.textContent = 'No headlines loaded — CORS proxy may be slow. Try again in a moment.';
+    status.style.color = 'var(--amber)';
+    status.textContent = 'Live feeds unavailable — paste your Bloomberg email below for ORACLE analysis, or use the chat agent for macro intel.';
     return;
   }
+
+  // Dedupe by title
+  var seen = {};
+  items = items.filter(function(item) {
+    var key = item.title.slice(0,40).toLowerCase();
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
 
   var bullCount = 0, bearCount = 0;
   items.forEach(function(item) {
@@ -605,26 +667,24 @@ function renderMacroNews(items, btn, status) {
 
   var bias = bearCount > bullCount ? '🔴 BEARISH LEAN' : bullCount > bearCount ? '🟢 BULLISH LEAN' : '🟡 NEUTRAL';
   status.style.color = bearCount > bullCount ? 'var(--red)' : bullCount > bearCount ? 'var(--green)' : 'var(--amber)';
-  status.textContent = items.length + ' headlines loaded · ORACLE bias: ' + bias + ' (' + bullCount + ' bull / ' + bearCount + ' bear) · ' + new Date().toUTCString().slice(17,25) + ' UTC';
+  status.textContent = items.length + ' headlines · ORACLE: ' + bias + ' (' + bullCount + ' bull / ' + bearCount + ' bear) · ' + new Date().toUTCString().slice(17,25) + ' UTC';
 
   var html = '';
   items.forEach(function(item) {
     var s = scoreMacroHeadline(item.title);
     html += '<div style="background:' + s.bg + ';border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;margin-bottom:6px;">';
     html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
-    html += '<div>';
+    html += '<div style="flex:1;">';
     html += '<div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:3px;letter-spacing:.06em;">' + item.source.toUpperCase() + '</div>';
     html += '<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:4px;">' + item.title + '</div>';
     if (item.desc) html += '<div style="font-size:10px;color:var(--muted);line-height:1.5;">' + item.desc + '...</div>';
-    html += '</div>';
-    html += '<span style="flex-shrink:0;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:' + s.bg + ';color:' + s.col + ';border:1px solid ' + s.col + '">' + s.label + '</span>';
-    html += '</div>';
     if (item.link) html += '<a href="' + item.link + '" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-top:4px;display:inline-block;">Read →</a>';
     html += '</div>';
+    html += '<span style="flex-shrink:0;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:' + s.bg + ';color:' + s.col + ';border:1px solid ' + s.col + '">' + s.label + '</span>';
+    html += '</div></div>';
   });
   headlines.innerHTML = html;
 
-  // Update Oracle badge
   document.getElementById('oracle-badge').textContent = bearCount > bullCount ? 'BEAR MACRO' : bullCount > bearCount ? 'BULL MACRO' : 'NEUTRAL';
   document.getElementById('oracle-badge').className = 'sb-badge ' + (bearCount > bullCount ? 'bear' : bullCount > bearCount ? 'bull' : 'watch');
 }
