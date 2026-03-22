@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>QUANT-OPS Command Center v2.2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;700&display=swap');
+:root{
+  --bg:#0a0c10;--surface:#0f1218;--surface2:#151b24;--surface3:#1a2233;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.15);
+  --text:#e8eaf0;--muted:#6b7890;
+  --accent:#00d4ff;--green:#00e87a;--red:#ff4560;--amber:#ffb020;--purple:#a78bfa;--cyan:#22d3ee;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Sans',sans-serif;font-size:16px;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;}
+.logo{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);letter-spacing:0.15em;}
+.hdr-r{display:flex;gap:14px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);display:inline-block;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+#last-update{color:var(--accent);}
+
+.shell{display:grid;grid-template-columns:190px 1fr;height:calc(100vh - 44px);}
+
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-sec{padding:9px 13px 3px;font-size:10px;letter-spacing:0.2em;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;border-left:2px solid transparent;transition:all 0.15s;user-select:none;;pointer-events:all;cursor:pointer;}
+.sb-item:hover{background:var(--surface2);}
+.sb-item.active{background:var(--surface2);border-left-color:var(--accent);}
+.sb-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.sb-name{font-size:13px;font-weight:700;}
+.sb-role{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.sb-badge{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:3px;font-weight:700;margin-left:auto;flex-shrink:0;}
+.bull{background:rgba(0,232,122,0.15);color:var(--green);}
+.bear{background:rgba(255,69,96,0.15);color:var(--red);}
+.watch{background:rgba(255,176,32,0.12);color:var(--amber);}
+.early{background:rgba(167,139,250,0.15);color:var(--purple);}
+.divider{height:1px;background:var(--border);margin:5px 13px;}
+
+/* Fear & Greed mini in sidebar */
+.fg-mini{padding:8px 13px;}
+.fg-label{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:5px;}
+.fg-dial{width:100%;height:6px;background:linear-gradient(to right,#ff4560,#ffb020,#00e87a);border-radius:3px;position:relative;margin-bottom:4px;}
+.fg-needle{position:absolute;top:-4px;width:2px;height:14px;background:#fff;border-radius:1px;transform:translateX(-50%);transition:left 0.8s ease;box-shadow:0 0 4px rgba(255,255,255,0.6);}
+.fg-val{font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
+.fg-class{font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+
+/* consensus */
+.cons-wrap{padding:6px 13px 10px;}
+.cons-lbl{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:4px;}
+.cons-bar{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;display:flex;margin-bottom:3px;}
+.cb-g{background:var(--green);}
+.cb-a{background:var(--amber);}
+.cb-r{background:var(--red);}
+.cons-leg{display:flex;gap:8px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+.cl{display:flex;align-items:center;gap:3px;}
+.cd{width:5px;height:5px;border-radius:1px;}
+
+.content{display:flex;flex-direction:column;overflow:visible;}
+
+.ticker{background:var(--surface);border-bottom:1px solid var(--border);height:30px;display:flex;align-items:center;gap:18px;padding:0 18px;overflow:hidden;flex-shrink:0;}
+.ti{display:flex;align-items:center;gap:4px;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.ti-sym{color:var(--muted);}
+.ti-p{font-weight:700;}
+.up{color:var(--green);}
+.dn{color:var(--red);}
+
+.view{flex:1;overflow-y:auto;padding:18px;display:none;}
+.view.visible{display:block;}
+
+/* loading */
+.loading-overlay{display:none!important;}
+
+
+}
+
+
+
+/* cards */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:13px;}
+.c-lbl{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px;}
+.c-val{font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1;}
+.c-sub{font-size:11px;color:var(--muted);margin-top:3px;font-family:'IBM Plex Mono',monospace;}
+
+/* panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:12px;}
+.p-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.p-title{font-size:13px;font-weight:700;letter-spacing:0.05em;}
+.sig-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);}
+.sig-row:last-child{border-bottom:none;}
+.sig-sym{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;min-width:75px;}
+.sig-dir{font-size:12px;font-family:'IBM Plex Mono',monospace;min-width:48px;}
+.sig-bw{flex:1;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;}
+.sig-b{height:100%;border-radius:2px;}
+.sig-c{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:30px;text-align:right;}
+.sig-btn{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:2px 7px;border-radius:4px;cursor:pointer;border:none;font-weight:700;}
+.bl{background:rgba(0,232,122,0.2);color:var(--green);}
+.bs{background:rgba(255,69,96,0.2);color:var(--red);}
+.bw{background:rgba(255,176,32,0.15);color:var(--amber);}
+
+.thesis{background:var(--surface2);border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:11px 13px;margin-bottom:12px;font-size:13px;line-height:1.7;}
+.th-lbl{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--purple);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:4px;}
+
+.agent-hdr{display:flex;gap:12px;margin-bottom:18px;}
+.agent-av{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.agent-ttl{font-size:20px;font-weight:800;line-height:1.2;}
+.agent-sub{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:3px;}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.chip{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--muted);}
+.chip.on{border-color:rgba(0,212,255,0.3);color:var(--accent);background:rgba(0,212,255,0.05);}
+
+/* overview */
+.ov-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.ov-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px;cursor:pointer;transition:border-color 0.2s,transform 0.15s;}
+.ov-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.ov-top{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.ov-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.ov-name{font-size:13px;font-weight:700;}
+.ov-type{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-top:1px;}
+.ov-sig{font-size:12px;font-weight:600;margin-bottom:3px;line-height:1.4;}
+.ov-bot{display:flex;justify-content:space-between;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-top:6px;}
+
+.coord-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px;}
+.cc{background:var(--surface2);border-radius:7px;padding:9px 7px;text-align:center;cursor:pointer;border:1px solid var(--border);transition:border-color 0.15s;}
+.cc:hover{border-color:var(--border2);}
+.cc-i{font-size:18px;margin-bottom:3px;}
+.cc-n{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px;}
+.cc-s{font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+
+/* conviction */
+.conv-row{display:flex;align-items:center;gap:8px;padding:5px 0;}
+.conv-lbl{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:130px;}
+.conv-track{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:visible;position:relative;}
+.conv-fill{height:100%;border-radius:3px;position:relative;transition:width 1s ease;}
+.conv-fill::after{content:'';position:absolute;right:-1px;top:-3px;width:11px;height:11px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor;}
+.conv-pct{font-size:12px;font-family:'IBM Plex Mono',monospace;min-width:30px;text-align:right;}
+
+/* news */
+.news-row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.news-row:last-child{border-bottom:none;}
+.news-row:hover .news-ttl{color:var(--accent);}
+.news-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;}
+.news-ttl{font-size:13px;font-weight:600;line-height:1.4;transition:color 0.15s;margin-bottom:2px;}
+.news-meta{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+.news-tag{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:3px;align-self:flex-start;margin-top:2px;flex-shrink:0;}
+
+/* sector */
+.sec-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);}
+.sec-row:last-child{border-bottom:none;}
+.sec-nm{font-family:'IBM Plex Mono',monospace;font-size:12px;min-width:80px;}
+
+/* triangle */
+.alert-box{background:rgba(255,69,96,0.05);border:1px solid rgba(255,69,96,0.3);border-radius:9px;padding:13px;margin-bottom:12px;}
+.alert-ttl{font-size:14px;font-weight:700;color:var(--red);margin-bottom:8px;}
+.alert-row{display:flex;justify-content:space-between;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:3px 0;color:var(--muted);}
+.alert-row span{color:var(--text);}
+.tri-status{background:var(--surface2);border-radius:8px;padding:11px;margin-bottom:11px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:1.9;}
+
+/* watchlist table */
+.wl-tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:'IBM Plex Mono',monospace;}
+
+/* nexus tabs */
+.ntab{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.ntab:hover{border-color:var(--border2);color:var(--text);}
+.ntab-active{background:rgba(0,232,122,0.1);border-color:rgba(0,232,122,0.4);color:var(--green);}
+.wl-tbl th{font-size:11px;color:var(--muted);text-align:left;padding:5px 7px;border-bottom:1px solid var(--border);letter-spacing:0.1em;}
+.wl-tbl td{padding:7px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.wl-tbl tr:last-child td{border-bottom:none;}
+.wl-tbl tr:hover td{background:rgba(255,255,255,0.02);}
+.sym-c{font-weight:700;color:var(--text);font-size:13px;}
+
+/* refresh btn */
+.refresh-btn{background:var(--accent);color:#000;border:none;border-radius:6px;padding:7px 15px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.05em;}
+.refresh-btn:hover{opacity:0.85;}
+.refresh-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+.sh{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin:14px 0 9px;}
+
+/* ── MARKET OVERVIEW ── */
+.market-overview{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+
+/* Big fear greed gauge */
+.fg-gauge-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;}
+.fg-arc-container{position:relative;width:180px;height:95px;margin:8px auto 4px;}
+.fg-arc-container svg{overflow:visible;}
+.fg-big-val{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:32px;font-weight:700;line-height:1;}
+.fg-big-class{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px;text-align:center;}
+.fg-history{display:flex;gap:8px;margin-top:10px;width:100%;}
+.fg-hist-item{flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;}
+.fg-hist-lbl{font-size:9px;color:var(--muted);margin-bottom:2px;}
+.fg-hist-val{font-size:13px;font-weight:700;}
+
+/* Market stats grid */
+.mkt-stats{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.mkt-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;font-family:'IBM Plex Mono',monospace;}
+.mkt-stat-row:last-child{border-bottom:none;}
+.mkt-stat-lbl{color:var(--muted);}
+.mkt-stat-val{font-weight:700;}
+
+/* LookOnChain feed */
+.loc-feed{background:var(--surface);border:1px solid rgba(167,139,250,0.3);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.loc-header{background:var(--surface2);padding:11px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.loc-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.loc-name{font-size:12px;font-weight:700;color:var(--purple);}
+.loc-handle{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.loc-live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);margin-left:auto;box-shadow:0 0 4px var(--green);}
+.loc-posts{padding:10px 14px;}
+.loc-post{padding:9px 0;border-bottom:1px solid var(--border);}
+.loc-post:last-child{border-bottom:none;}
+.loc-post-text{font-size:11px;line-height:1.6;color:var(--text);margin-bottom:4px;}
+.loc-post-meta{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);display:flex;gap:12px;}
+.loc-tag{display:inline-block;font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:3px;margin-right:4px;margin-bottom:2px;}
+.loc-embed-wrap{width:100%;background:var(--surface2);padding:12px;border-top:1px solid var(--border);}
+.loc-open-btn{display:block;width:100%;text-align:center;padding:8px;border-radius:6px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--purple);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;text-decoration:none;transition:background 0.15s;}
+.loc-open-btn:hover{background:rgba(167,139,250,0.2);}
+
+.highlight{color:var(--green);}
+.highlight-r{color:var(--red);}
+.highlight-a{color:var(--amber);}
+.highlight-p{color:var(--purple);}
+
+/* ── CHAT PANEL ── */
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">◈ QUANT-OPS // COMMAND CENTER v2.2</div>
+  <div class="hdr-r">
+    <span><span class="live-dot"></span> BYBIT LIVE</span>
+    <span id="last-update">--:--:-- UTC</span>
+    <span>F&G: <span id="hdr-fg" style="color:var(--amber)">--</span></span>
+    <span>BTC DOM: <span id="hdr-dom" style="color:var(--amber)">--</span></span>
+    <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">BAL: <span id="hdr-balance" style="color:var(--green)">--</span></span>
+    <button class="refresh-btn" id="rbtn" onclick="refreshAll()">↻ REFRESH</button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-sec">Navigation</div>
+    <div class="sb-item active" onclick=\"sv('overview', this)\">
+      <div class="sb-icon" style="background:rgba(0,212,255,0.1)">🧠</div>
+      <div><div class="sb-name">Overview</div><div class="sb-role">COORDINATOR</div></div>
+    </div>
+    <div class="sb-item" onclick=\"sv('market', this)\">
+      <div class="sb-icon" style="background:rgba(255,176,32,0.1)">🌍</div>
+      <div><div class="sb-name">Market</div><div class="sb-role">OVERVIEW + F&G</div></div>
+    </div>
+    <div class="sb-item" onclick=\"sv('lookonchain', this)\">
+      <div class="sb-icon" style="background:rgba(167,139,250,0.15)">🔍</div>
+      <div><div class="sb-name">LookOnChain</div><div class="sb-role">@LOOKONCHAIN</div></div>
+    </div>
+    <div class="sb-item" onclick=\"sv('watchlist-view', this)\">
+      <div class="sb-icon" style="background:rgba(0,212,255,0.08)">📋</div>
+      <div><div class="sb-name">Watchlist</div><div class="sb-role">27 SYMBOLS</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="sb-sec">Agents</div>
+    <div class="sb-item" onclick=\"sv('hydra', this)\">
+      <div class="sb-icon" style="background:rgba(252,177,0,0.1)">📊</div>
+      <div><div class="sb-name">HYDRA</div><div class="sb-role">FUTURES QUANT</div></div>
+      <span class="sb-badge bull" id="hydra-badge">--</span>
+    </div>
+    <div class="sb-item" onclick=\"sv('cipher', this)\">
+      <div class="sb-icon" style="background:rgba(99,102,241,0.15)">🤖</div>
+      <div><div class="sb-name">CIPHER</div><div class="sb-role">AI SECTOR</div></div>
+      <span class="sb-badge bull" id="cipher-badge">AI BULL</span>
+    </div>
+    <div class="sb-item" onclick=\"sv('oracle', this)\">
+      <div class="sb-icon" style="background:rgba(239,68,68,0.1)">🌐</div>
+      <div><div class="sb-name">ORACLE</div><div class="sb-role">MACRO</div></div>
+      <span class="sb-badge watch" id="oracle-badge">--</span>
+    </div>
+    <div class="sb-item" onclick=\"sv('nexus', this)\">
+      <div class="sb-icon" style="background:rgba(0,232,122,0.1)">⛓</div>
+      <div><div class="sb-name">NEXUS</div><div class="sb-role">SECTORS</div></div>
+      <span class="sb-badge bull" id="nexus-badge">--</span>
+    </div>
+    <div class="sb-item" onclick=\"sv('phantom', this)\">
+      <div class="sb-icon" style="background:rgba(167,139,250,0.12)">🎯</div>
+      <div><div class="sb-name">PHANTOM</div><div class="sb-role">PATTERNS</div></div>
+      <span class="sb-badge early" id="phantom-badge">WATCH</span>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Fear & Greed mini -->
+    <div class="fg-mini">
+      <div class="fg-label">FEAR & GREED</div>
+      <div class="fg-val" id="sb-fg-val" style="color:var(--amber)">--</div>
+      <div class="fg-class" id="sb-fg-class" style="color:var(--muted)">Loading...</div>
+      <div class="fg-dial" style="margin-top:6px">
+        <div class="fg-needle" id="sb-fg-needle" style="left:50%"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sb-sec">Consensus</div>
+    <div class="cons-wrap">
+      <div class="cons-lbl">MARKET BIAS</div>
+      <div class="cons-bar">
+        <div class="cb-g" id="cb-bull" style="width:50%"></div>
+        <div class="cb-a" id="cb-neut" style="width:30%"></div>
+        <div class="cb-r" id="cb-bear" style="width:20%"></div>
+      </div>
+      <div class="cons-leg">
+        <div class="cl"><div class="cd" style="background:var(--green)"></div><span id="bull-pct">--</span></div>
+        <div class="cl"><div class="cd" style="background:var(--amber)"></div><span id="neut-pct">--</span></div>
+        <div class="cl"><div class="cd" style="background:var(--red)"></div><span id="bear-pct">--</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- TICKER -->
+    <div class="ticker">
+      <div class="ti"><span class="ti-sym">BTC</span><span class="ti-p" id="t-btc">--</span><span class="up" id="tc-btc" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">ETH</span><span class="ti-p" id="t-eth">--</span><span class="up" id="tc-eth" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">SOL</span><span class="ti-p" id="t-sol">--</span><span class="up" id="tc-sol" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">TAO</span><span class="ti-p" id="t-tao">--</span><span class="up" id="tc-tao" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">RNDR</span><span class="ti-p" id="t-rndr">--</span><span class="up" id="tc-rndr" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">AKT</span><span class="ti-p" id="t-akt">--</span><span class="up" id="tc-akt" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">HYPE</span><span class="ti-p" id="t-hype">--</span><span class="up" id="tc-hype" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">XRP</span><span class="ti-p" id="t-xrp">--</span><span class="up" id="tc-xrp" style="font-size:9px">--</span></div>
+      <div class="ti"><span class="ti-sym">DOGE</span><span class="ti-p" id="t-doge">--</span><span class="up" id="tc-doge" style="font-size:9px">--</span></div>
+    </div>
+
+    <!-- ══ POSITIONS ══ -->
+    <div class="view" id="view-positions">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(0,232,122,0.1)">💼</div>
+        <div>
+          <div class="agent-ttl">LIVE POSITIONS — BYBIT</div>
+          <div class="agent-sub">REAL-TIME P&L · STOPS · LIQUIDATION DISTANCES · AUTO-REFRESH</div>
+          <div class="chips">
+            <span class="chip on" id="api-status-chip">API: NOT CONFIGURED</span>
+            <span class="chip">READ-ONLY KEY</span>
+            <span class="chip">AUTO-REFRESH 30s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Setup instructions when no key -->
+      <div id="api-setup-guide" class="panel" style="border-color:rgba(0,212,255,0.3);margin-bottom:14px">
+        <div class="p-hdr"><span class="p-title" style="color:var(--accent)">&#128273; BYBIT API SETUP</span></div>
+        <div style="font-size:13px;line-height:1.9;padding:8px 0;color:var(--muted)">
+          <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="background:var(--accent);color:#000;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">1</span>
+            <span>Bybit &#8594; Account &#8594; API Management &#8594; Create New Key &#8594; <strong style="color:var(--text)">Read Only</strong> &#8594; copy Key and Secret</span>
+          </div>
+          <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="background:var(--accent);color:#000;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">2</span>
+            <span>Open <strong style="color:var(--text)">QUANTOPS_v2.2.html</strong> in Notepad or VSCode &#8594; search for <strong style="color:var(--cyan)">BYBIT_KEY</strong></span>
+          </div>
+          <div style="display:flex;gap:10px;padding:6px 0">
+            <span style="background:var(--accent);color:#000;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</span>
+            <span>Paste key and secret between the quotes, change <strong style="color:var(--cyan)">USE_PRIVATE: false</strong> to <strong style="color:var(--green)">USE_PRIVATE: true</strong> &#8594; save &#8594; refresh</span>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;color:var(--muted);line-height:2">
+          Find this in the file and fill it in:<br>
+          <span style="color:var(--muted)">BYBIT_KEY:</span> <span style="color:var(--green)">&#39;paste_your_key_here&#39;</span><br>
+          <span style="color:var(--muted)">BYBIT_SECRET:</span> <span style="color:var(--green)">&#39;paste_your_secret_here&#39;</span><br>
+          <span style="color:var(--muted)">USE_PRIVATE:</span> <span style="color:var(--cyan)">true</span>
+        </div>
+      </div>
+
+      <!-- Live positions panel -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="p-hdr">
+          <span class="p-title">📊 OPEN POSITIONS</span>
+          <button onclick="refreshPrivateData()" style="font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.3);color:var(--green);padding:3px 10px;border-radius:5px;cursor:pointer">↻ REFRESH</button>
+        </div>
+        <div id="live-positions-panel">
+          <div style="padding:14px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:center">Configure API keys above to see live positions</div>
+        </div>
+      </div>
+
+      <!-- Balance summary -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="p-hdr"><span class="p-title">💰 ACCOUNT BALANCE</span></div>
+        <div id="balance-summary">
+          <div style="padding:14px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:center">Configure API keys above</div>
+        </div>
+      </div>
+
+      <!-- House goal tracker -->
+      <div class="panel" style="border-color:rgba(167,139,250,0.3)">
+        <div class="p-hdr"><span class="p-title" style="color:var(--purple)">🏠 HOUSE GOAL TRACKER</span></div>
+        <div style="padding:10px 0">
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
+            <span style="color:var(--muted)">Current balance</span>
+            <span id="goal-current" style="color:var(--green);font-weight:700">$6.55</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-family:'IBM Plex Mono',monospace;margin-bottom:8px">
+            <span style="color:var(--muted)">Target</span>
+            <span style="color:var(--text);font-weight:700">$10,000</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-family:'IBM Plex Mono',monospace;margin-bottom:10px">
+            <span style="color:var(--muted)">Deadline</span>
+            <span style="color:var(--amber);font-weight:700">July 2026</span>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px">
+            <div id="goal-bar" style="height:100%;background:linear-gradient(to right,var(--purple),var(--accent));border-radius:6px;width:0.065%;transition:width 1s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">
+            <span>$0</span><span id="goal-pct">0.065% of target</span><span>$10,000</span>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:rgba(167,139,250,0.06);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.7">
+            <strong style="color:var(--text)">PHANTOM route to $10K:</strong> Compound 3-5× per week using Howrie signals only. Every win: 70% reinvest, 30% reserve. No leverage above 20x until $500. Target: $10 → $200 by April → $2K by June → $10K by July. One Howrie green triangle at a time.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ OVERVIEW ══ -->
+
+    <div class="view visible" id="view-overview">
+      <div class="coord-grid">
+        <div class="cc" onclick="sv('hydra',null)"><div class="cc-i">📊</div><div class="cc-n">HYDRA</div><div class="cc-s" id="coord-hydra" style="color:var(--muted)">--</div></div>
+        <div class="cc" onclick="sv('cipher',null)"><div class="cc-i">🤖</div><div class="cc-n">CIPHER</div><div class="cc-s" id="coord-cipher" style="color:var(--purple)">AI BULL</div></div>
+        <div class="cc" onclick="sv('oracle',null)"><div class="cc-i">🌐</div><div class="cc-n">ORACLE</div><div class="cc-s" id="coord-oracle" style="color:var(--amber)">--</div></div>
+        <div class="cc" onclick="sv('nexus',null)"><div class="cc-i">⛓</div><div class="cc-n">NEXUS</div><div class="cc-s" id="coord-nexus" style="color:var(--muted)">--</div></div>
+        <div class="cc" onclick="sv('phantom',null)"><div class="cc-i">🎯</div><div class="cc-n">PHANTOM</div><div class="cc-s" id="coord-phantom" style="color:var(--purple)">WATCHING</div></div>
+      </div>
+      <div class="thesis"><div class="th-lbl">Coordinator Synthesis</div><div id="coord-thesis">Loading live data from Bybit...</div></div>
+      <div class="ov-grid">
+        <div class="ov-card" onclick="sv('hydra',null)">
+          <div class="ov-top"><div class="ov-icon" style="background:rgba(252,177,0,0.1)">📊</div><div><div class="ov-name">HYDRA — Futures Quant</div><div class="ov-type">BYBIT PERPS + DERIVATIVES</div></div></div>
+          <div class="ov-sig" id="ov-hydra">Fetching funding rates...</div>
+          <div class="ov-bot"><span>TOP PLAY</span><span class="sb-badge bull" id="ov-hb">--</span></div>
+        </div>
+        <div class="ov-card" onclick="sv('cipher',null)">
+          <div class="ov-top"><div class="ov-icon" style="background:rgba(99,102,241,0.15)">🤖</div><div><div class="ov-name">CIPHER — AI Sector</div><div class="ov-type">AI COIN INTELLIGENCE</div></div></div>
+          <div class="ov-sig" id="ov-cipher">TAO, RNDR, AKT, VIRTUAL, ICP...</div>
+          <div class="ov-bot"><span>TOP PLAY</span><span class="sb-badge bull">ACCUM TAO</span></div>
+        </div>
+        <div class="ov-card" onclick="sv('market',null)">
+          <div class="ov-top"><div class="ov-icon" style="background:rgba(255,176,32,0.1)">🌍</div><div><div class="ov-name">Market Overview</div><div class="ov-type">FEAR & GREED + GLOBAL</div></div></div>
+          <div class="ov-sig" id="ov-market">Loading sentiment data...</div>
+          <div class="ov-bot"><span>SENTIMENT</span><span class="sb-badge watch" id="ov-mb">--</span></div>
+        </div>
+        <div class="ov-card" onclick="sv('lookonchain',null)">
+          <div class="ov-top"><div class="ov-icon" style="background:rgba(167,139,250,0.15)">🔍</div><div><div class="ov-name">LookOnChain</div><div class="ov-type">@LOOKONCHAIN INTEL</div></div></div>
+          <div class="ov-sig">Smart money tracking. Whale alerts. On-chain intelligence from the best in the space.</div>
+          <div class="ov-bot"><span>X INTEL</span><span class="sb-badge early">LIVE FEED</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MARKET OVERVIEW ══ -->
+    <div class="view" id="view-market">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div><div style="font-size:17px;font-weight:800">Market Overview</div><div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">Fear & Greed • BTC Dominance • Global Sentiment</div></div>
+      </div>
+
+      <div class="market-overview">
+        <!-- Big Fear & Greed Gauge -->
+        <div class="fg-gauge-wrap">
+          <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.15em;margin-bottom:6px">CRYPTO FEAR & GREED INDEX</div>
+          <div class="fg-arc-container">
+            <svg width="180" height="95" viewBox="0 0 180 95">
+              <defs>
+                <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#ff4560"/>
+                  <stop offset="25%"  stop-color="#ff4560"/>
+                  <stop offset="40%"  stop-color="#ffb020"/>
+                  <stop offset="60%"  stop-color="#ffb020"/>
+                  <stop offset="75%"  stop-color="#00e87a"/>
+                  <stop offset="100%" stop-color="#00e87a"/>
+                </linearGradient>
+              </defs>
+              <!-- Background arc -->
+              <path d="M 15 90 A 75 75 0 0 1 165 90" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" stroke-linecap="round"/>
+              <!-- Colored arc -->
+              <path d="M 15 90 A 75 75 0 0 1 165 90" fill="none" stroke="url(#arcGrad)" stroke-width="10" stroke-linecap="round"/>
+              <!-- Needle -->
+              <g id="fg-needle-group" transform="rotate(-90, 90, 90)">
+                <line x1="90" y1="90" x2="90" y2="25" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="90" cy="90" r="5" fill="white"/>
+              </g>
+              <!-- Labels -->
+              <text x="10" y="88" fill="#ff4560" font-size="9" font-family="Space Mono,monospace">FEAR</text>
+              <text x="130" y="88" fill="#00e87a" font-size="9" font-family="Space Mono,monospace">GREED</text>
+            </svg>
+            <div class="fg-big-val" id="fg-big-val" style="color:var(--amber)">--</div>
+          </div>
+          <div class="fg-big-class" id="fg-big-class">Loading...</div>
+
+          <div class="fg-history" id="fg-history" style="margin-top:10px">
+            <div class="fg-hist-item"><div class="fg-hist-lbl">YESTERDAY</div><div class="fg-hist-val" id="fg-y" style="color:var(--muted)">--</div></div>
+            <div class="fg-hist-item"><div class="fg-hist-lbl">LAST WEEK</div><div class="fg-hist-val" id="fg-w" style="color:var(--muted)">--</div></div>
+            <div class="fg-hist-item"><div class="fg-hist-lbl">LAST MONTH</div><div class="fg-hist-val" id="fg-m" style="color:var(--muted)">--</div></div>
+          </div>
+
+          <div id="fg-signal-box" style="margin-top:10px;width:100%;padding:8px;border-radius:6px;font-size:10px;font-family:'IBM Plex Mono',monospace;text-align:center;background:var(--surface2)">
+            Loading signal...
+          </div>
+          <div style="font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:6px;text-align:center">Data: alternative.me/crypto/fear-and-greed-index</div>
+        </div>
+
+        <!-- Market Stats -->
+        <div class="mkt-stats">
+          <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.15em;margin-bottom:10px">LIVE MARKET STATS</div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">BTC Price</span><span class="mkt-stat-val" id="ms-btc-p">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">BTC 24h Change</span><span class="mkt-stat-val" id="ms-btc-c">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">ETH Price</span><span class="mkt-stat-val" id="ms-eth-p">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">ETH 24h Change</span><span class="mkt-stat-val" id="ms-eth-c">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">BTC Funding</span><span class="mkt-stat-val" id="ms-btc-f">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">BTC OI Trend</span><span class="mkt-stat-val" id="ms-btc-oi">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">Friday Expiry</span><span class="mkt-stat-val" id="ms-friday">--</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl">Market Condition</span><span class="mkt-stat-val" id="ms-condition">--</span></div>
+          <div class="mkt-stat-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px"><span class="mkt-stat-lbl" style="color:var(--amber)">CoinGlass F&G</span><span class="mkt-stat-val" id="ms-cg-fg" style="color:var(--red)">11 — EXTREME FEAR</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl" style="color:var(--amber)">AVG RSI</span><span class="mkt-stat-val" id="ms-cg-rsi">43.32 NEUTRAL</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl" style="color:var(--amber)">Altcoin Season</span><span class="mkt-stat-val" id="ms-cg-alt">51 NEUTRAL</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl" style="color:var(--amber)">Global OI</span><span class="mkt-stat-val">$104.72B</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl" style="color:var(--amber)">24h Liquidations</span><span class="mkt-stat-val">$121.8M</span></div>
+          <div class="mkt-stat-row"><span class="mkt-stat-lbl" style="color:var(--amber)">BTC Exch Balance</span><span class="mkt-stat-val" style="color:var(--green)">-1.08K outflow</span></div>
+          <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-top:6px;padding:6px;background:rgba(255,176,32,0.06);border-radius:5px;">CoinGlass data — refresh each session <button onclick="updateCGData()" style="font-size:9px;font-family:'IBM Plex Mono',monospace;background:rgba(255,176,32,0.15);border:1px solid rgba(255,176,32,0.3);color:var(--amber);padding:2px 7px;border-radius:4px;cursor:pointer;margin-left:4px">UPDATE</button></div>
+        </div>
+      </div>
+
+      <!-- CoinGlass snapshot panel -->
+      <div class="panel" style="border-color:rgba(255,176,32,0.3);margin-bottom:14px">
+        <div class="p-hdr">
+          <span class="p-title" style="color:var(--amber)">📊 COINGLASS SNAPSHOT — <span id="cg-timestamp">Updated: Mar 21 2026 from screenshot</span></span>
+          <a href="https://coinglass.com" target="_blank" style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--amber);text-decoration:none;border:1px solid rgba(255,176,32,0.3);padding:2px 8px;border-radius:4px;">OPEN COINGLASS ↗</a>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:rgba(255,69,96,0.06);border:1px solid rgba(255,69,96,0.2);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px">COINGLASS F&G</div>
+            <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--red)" id="cg-fg-big">11</div>
+            <div style="font-size:10px;color:var(--red);font-family:'IBM Plex Mono',monospace" id="cg-fg-cls">EXTREME FEAR</div>
+            <div style="font-size:9px;color:var(--muted);margin-top:4px">alt.me shows: 61</div>
+          </div>
+          <div style="background:rgba(255,176,32,0.05);border:1px solid rgba(255,176,32,0.2);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px">AVG RSI</div>
+            <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--amber)" id="cg-rsi-big">43.32</div>
+            <div style="font-size:10px;color:var(--amber);font-family:'IBM Plex Mono',monospace">NEUTRAL</div>
+          </div>
+          <div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.2);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px">ALTCOIN SEASON</div>
+            <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--cyan)" id="cg-alt-big">51</div>
+            <div style="font-size:10px;color:var(--cyan);font-family:'IBM Plex Mono',monospace">NEUTRAL</div>
+          </div>
+          <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:3px">BTC DOMINANCE</div>
+            <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent)">58.40%</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">+0.14%</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.1em;margin-bottom:6px">TOP GAINERS (4H)</div>
+            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;line-height:1">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">FOLKS</span><span style="color:var(--green)">+22.41%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">BUTTCOIN</span><span style="color:var(--green)">+13.16%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">UAI</span><span style="color:var(--green)">+11.48%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--amber);font-weight:700">PIPPIN ★</span><span style="color:var(--green)">+10.73%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--amber);font-weight:700">AKT ★</span><span style="color:var(--green)">+9.86%</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.1em;margin-bottom:6px">OI CHANGE (4H)</div>
+            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;line-height:1">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">RDNT</span><span style="color:var(--green)">+94.95%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">FOLKS</span><span style="color:var(--green)">+41.78%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">ORDER</span><span style="color:var(--green)">+23.40%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text)">UAI</span><span style="color:var(--green)">+22.11%</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text)">REZ</span><span style="color:var(--green)">+19.18%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.1em;margin-bottom:6px">LONG/SHORT RATIOS</div>
+            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:1.9">
+              <div>Binance top traders (pos): <span style="color:var(--amber)">1.02</span></div>
+              <div>Binance top traders (acc): <span style="color:var(--green)">1.49</span></div>
+              <div>OKX BTC accounts: <span style="color:var(--green)">1.32</span></div>
+              <div>Binance accounts: <span style="color:var(--green)">1.43</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.1em;margin-bottom:6px">MACRO INDICES</div>
+            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);line-height:1.9">
+              <div>Gold futures: <span style="color:var(--red)">-3.45%</span> $4491</div>
+              <div>DXY: <span style="color:var(--red)">+0.40%</span> $99.46</div>
+              <div>BTC exch bal: <span style="color:var(--green)">-1.08K</span> outflow</div>
+              <div>24h liquidations: <span style="color:var(--amber)">$121.8M</span> -57%</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:10px;background:rgba(255,69,96,0.05);border-radius:7px;border-left:3px solid var(--red)">
+          <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--red);letter-spacing:0.15em;margin-bottom:5px">ORACLE READS THIS AS</div>
+          <div style="font-size:11px;color:var(--text);line-height:1.7">CoinGlass F&G 11 = <strong style="color:var(--green)">Extreme Fear — historically strongest buy zone.</strong> Gold -3.45% = macro risk-off. BUT BTC exchange outflows (-1.08K) = whales accumulating quietly. DXY +0.40% is a headwind. PIPPIN and AKT both top-5 gainers on your watchlist — internal rotation happening inside the fear. <strong style="color:var(--amber)">Signal: accumulate quality (TAO, AKT, RNDR) in tranches. Avoid chasing FOLKS/BUTTCOIN.</strong></div>
+        </div>
+      </div>
+
+      <!-- Sector heatmap from watchlist -->
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">📈 SECTOR PERFORMANCE — LIVE FROM BYBIT</span></div>
+        <div id="mkt-sectors">Loading...</div>
+      </div>
+    </div>
+
+    <!-- ══ LOOKONCHAIN ══ -->
+    <div class="view" id="view-lookonchain">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="font-size:17px;font-weight:800">@lookonchain Intelligence</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">Smart money tracking • Whale alerts • On-chain data</div>
+        </div>
+        <a href="https://x.com/lookonchain" target="_blank" style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--purple);text-decoration:none;border:1px solid rgba(167,139,250,0.3);padding:5px 10px;border-radius:5px;">OPEN ON X ↗</a>
+      </div>
+
+      <!-- Embed X timeline via their official embed -->
+      <div class="loc-feed">
+        <div class="loc-header">
+          <div class="loc-avatar">🔍</div>
+          <div>
+            <div class="loc-name">LookOnChain</div>
+            <div class="loc-handle">@lookonchain • Whale tracking • Smart money</div>
+          </div>
+          <div class="loc-live-dot"></div>
+        </div>
+
+        <!-- Static curated sample posts — style matches their content type -->
+        <div class="loc-posts" id="loc-posts">
+          <div class="loc-post">
+            <div class="loc-post-text">
+              <span class="loc-tag" style="background:rgba(0,232,122,0.1);color:var(--green)">ACCUMULATION</span>
+              A whale accumulated <span class="highlight">2,500 $ETH (~$8M)</span> from Binance in the past 24h. This address has been consistently buying dips since December.
+            </div>
+            <div class="loc-post-meta"><span>@lookonchain</span><span>Live feed — open X for latest</span></div>
+          </div>
+          <div class="loc-post">
+            <div class="loc-post-text">
+              <span class="loc-tag" style="background:rgba(167,139,250,0.1);color:var(--purple)">SMART MONEY</span>
+              The wallet that made <span class="highlight">$2.19M on $PEPE</span> and <span class="highlight">$1.7M on $SPX</span> is now rotating into <span class="highlight-a">$TAO</span>. Bought 847 TAO in the last 6h.
+            </div>
+            <div class="loc-post-meta"><span>@lookonchain</span><span>Type of alert LookOnChain posts</span></div>
+          </div>
+          <div class="loc-post">
+            <div class="loc-post-text">
+              <span class="loc-tag" style="background:rgba(0,212,255,0.1);color:var(--accent)">INSTITUTION</span>
+              BlackRock's IBIT received <span class="highlight">1,847 $BTC (~$155M)</span> today — the largest single-day inflow in 3 weeks. Total IBIT holdings now at <span class="highlight">287,000 BTC</span>.
+            </div>
+            <div class="loc-post-meta"><span>@lookonchain</span><span>ETF flow tracking</span></div>
+          </div>
+          <div class="loc-post">
+            <div class="loc-post-text">
+              <span class="loc-tag" style="background:rgba(255,69,96,0.1);color:var(--red)">RISK</span>
+              A long-term <span class="highlight-r">$RNDR</span> holder just sent <span class="highlight-r">890,000 RNDR (~$1.5M)</span> to Binance. Watch for potential selling pressure.
+            </div>
+            <div class="loc-post-meta"><span>@lookonchain</span><span>Exchange inflow alert</span></div>
+          </div>
+          <div class="loc-post">
+            <div class="loc-post-text">
+              <span class="loc-tag" style="background:rgba(255,176,32,0.1);color:var(--amber)">DEPIN</span>
+              Two wallets connected to early <span class="highlight-a">$AKT</span> investors withdrew 2.4M AKT from Bybit over the past week — accumulation pattern, not selling.
+            </div>
+            <div class="loc-post-meta"><span>@lookonchain</span><span>Bybit withdrawal tracking</span></div>
+          </div>
+        </div>
+
+        <div class="loc-embed-wrap">
+          <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:8px;text-align:center">
+            ↑ Curated LookOnChain alert types — for live feed open X below
+          </div>
+          <!-- X official embed via their published timeline widget -->
+          <a href="https://x.com/lookonchain" target="_blank" class="loc-open-btn">
+            🔍 Open @lookonchain on X for live posts ↗
+          </a>
+        </div>
+      </div>
+
+      <!-- Why LookOnChain matters for HYDRA -->
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">🏦 HOW LOOKONCHAIN FEEDS YOUR AGENTS</span></div>
+        <div class="news-row">
+          <div class="news-bar" style="background:var(--amber)"></div>
+          <div><div class="news-ttl">HYDRA Integration — Exchange flows</div><div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5">When LookOnChain reports large BTC/ETH withdrawals from exchanges → accumulation signal → HYDRA adds +1 to confidence. Exchange inflows → distribution risk → reduce position sizing.</div></div>
+        </div>
+        <div class="news-row">
+          <div class="news-bar" style="background:var(--purple)"></div>
+          <div><div class="news-ttl">CIPHER Integration — Smart money per token</div><div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5">When a wallet with a verified track record (made $2M+ on previous trades) accumulates a specific token → CIPHER flags as "smart money accumulation" → elevates conviction score on that symbol.</div></div>
+        </div>
+        <div class="news-row">
+          <div class="news-bar" style="background:var(--green)"></div>
+          <div><div class="news-ttl">PHANTOM Integration — Institutional early signals</div><div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5">BlackRock/Grayscale/Fidelity wallet activity spotted by LookOnChain → PHANTOM flags as 3-6 month thesis confirmation. These institutions move before price, not after.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ WATCHLIST ══ -->
+    <div class="view" id="view-watchlist-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div><div style="font-size:17px;font-weight:800">Watchlist — 27 Symbols</div><div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">Live from Bybit • Updated <span id="wl-time">--</span></div></div>
+      </div>
+      <div class="panel">
+        <table class="wl-tbl">
+          <thead><tr>
+            <th>SYMBOL</th><th>PRICE</th><th>24H</th><th>FUNDING</th><th>OI</th><th>AGENT</th><th>SECTOR</th><th>SIGNAL</th>
+          </tr></thead>
+          <tbody id="wl-tbody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:16px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ HYDRA ══ -->
+    <div class="view" id="view-hydra">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(252,177,0,0.12)">📊</div>
+        <div><div class="agent-ttl">HYDRA — Futures Quant</div><div class="agent-sub">BYBIT PERPETUALS • DERIVATIVES • OPTIONS FLOW</div>
+        <div class="chips"><span class="chip on">BYBIT LIVE</span><span class="chip on">FREE</span><span class="chip">COINGLASS</span><span class="chip">ARKHAM</span></div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="c-lbl">BTC Funding</div><div class="c-val" id="h-f-btc">--</div><div class="c-sub" id="h-f-btc-s">--</div></div>
+        <div class="card"><div class="c-lbl">BTC Open Interest</div><div class="c-val" id="h-oi-btc">--</div><div class="c-sub" id="h-oi-btc-s">--</div></div>
+        <div class="card"><div class="c-lbl">ETH Funding</div><div class="c-val" id="h-f-eth">--</div><div class="c-sub" id="h-f-eth-s">--</div></div>
+        <div class="card"><div class="c-lbl">BTC 24h</div><div class="c-val" id="h-btc-c">--</div><div class="c-sub" id="h-btc-p">--</div></div>
+        <div class="card"><div class="c-lbl">ETH OI Trend</div><div class="c-val" id="h-oi-eth">--</div><div class="c-sub" id="h-oi-eth-s">--</div></div>
+        <div class="card"><div class="c-lbl">Friday Expiry</div><div class="c-val" id="h-fri">--</div><div class="c-sub" id="h-fri-s">Options gamma</div></div>
+      </div>
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">🎯 HYDRA SIGNALS</span><span class="sb-badge bull" id="h-sig-count">--</span></div>
+        <div id="hydra-sigs"><div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding:8px 0">Loading...</div></div>
+      </div>
+      <div class="thesis"><div class="th-lbl">HYDRA Thesis</div><div id="hydra-thesis">Analysing derivatives...</div></div>
+    </div>
+
+    <!-- ══ CIPHER ══ -->
+    <div class="view" id="view-cipher">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(99,102,241,0.15)">🤖</div>
+        <div>
+          <div class="agent-ttl">CIPHER — AI Sector Specialist</div>
+          <div class="agent-sub">AI COIN FUNDAMENTALS • CEOs • Q1 2026 REVENUE DATA • TOKENOMICS</div>
+          <div class="chips">
+            <span class="chip on">BYBIT LIVE</span>
+            <span class="chip on">Q1 2026 REVENUE</span>
+            <span class="chip">@DamiDefi</span>
+            <span class="chip">ARKHAM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue chart from @DamiDefi -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="p-hdr">
+          <span class="p-title">💰 Q1 2026 AI CRYPTO REVENUE — Source: @DamiDefi</span>
+          <a href="https://x.com/DamiDefi" target="_blank" style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--purple);text-decoration:none;border:1px solid rgba(167,139,250,0.3);padding:2px 7px;border-radius:4px;">@DamiDefi ↗</a>
+        </div>
+        <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:12px;padding:8px;background:rgba(255,176,32,0.05);border-radius:6px;border-left:3px solid var(--amber)">
+          "Price follows revenue. Always has. Always will." — @DamiDefi, Mar 21 2026
+        </div>
+        <div id="cipher-rev-chart"></div>
+      </div>
+
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">🧬 AI SECTOR LIVE RANKINGS + REVENUE</span></div>
+        <div id="cipher-sigs"></div>
+      </div>
+
+      <!-- CEO Intelligence -->
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">👤 CEO INTELLIGENCE — WATCH THESE ACCOUNTS</span></div>
+        <div id="cipher-ceos"></div>
+      </div>
+
+      <div class="thesis"><div class="th-lbl">CIPHER Analysis</div><div id="cipher-thesis">Loading...</div></div>
+    </div>
+    <!-- ══ ORACLE ══ -->
+    <!-- ══ ORACLE ══ -->
+    <div class="view" id="view-oracle">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(239,68,68,0.1)">🌐</div>
+        <div><div class="agent-ttl">ORACLE — Macro</div><div class="agent-sub">THE STRAW THAT BREAKS THE CAMEL</div>
+        <div class="chips"><span class="chip on">BLOOMBERG RSS</span><span class="chip on">YAHOO FIN</span><span class="chip on">BYBIT</span></div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="c-lbl">Risk Level</div><div class="c-val" id="o-risk">--</div><div class="c-sub" id="o-risk-s">Macro environment</div></div>
+        <div class="card"><div class="c-lbl">Market Mode</div><div class="c-val" id="o-mode">--</div><div class="c-sub">BTC 24h signal</div></div>
+        <div class="card"><div class="c-lbl">Friday Expiry</div><div class="c-val" id="o-fri">--</div><div class="c-sub" id="o-fri-s">Options expiry</div></div>
+      </div>
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">🚨 MACRO TRIGGERS</span></div>
+        <div id="oracle-news"><div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding:8px 0">Loading macro feed...</div></div>
+      </div>
+      <div class="thesis"><div class="th-lbl">ORACLE — Straw to Watch</div><div id="oracle-thesis">Analysing macro landscape...</div></div>
+    </div>
+
+    <!-- ══ NEXUS ══ -->
+    <div class="view" id="view-nexus">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(0,232,122,0.1)">⛓</div>
+        <div>
+          <div class="agent-ttl">NEXUS — Crypto Sector Specialist</div>
+          <div class="agent-sub">DEFI • DEPIN • RWA • MEME • GAMEFI • AI SUBCLUSTERS</div>
+          <div class="chips"><span class="chip on">DEFILLAMA FREE</span><span class="chip on">BYBIT LIVE</span><span class="chip on">RESEARCH LOADED</span></div>
+        </div>
+      </div>
+
+      <!-- Tab nav -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="nexus-tab-row">
+        <button onclick="nexusTab('rotation')" id="nt-rotation" class="ntab ntab-active">📊 Rotation</button>
+        <button onclick="nexusTab('gpu')" id="nt-gpu" class="ntab">🖥 GPU Cluster</button>
+        <button onclick="nexusTab('robotics')" id="nt-robotics" class="ntab">🤖 Robotics/Physical AI</button>
+        <button onclick="nexusTab('intelligence')" id="nt-intelligence" class="ntab">🧠 Intelligence Layer</button>
+        <button onclick="nexusTab('data')" id="nt-data" class="ntab">🔗 Data/Infra</button>
+        <button onclick="nexusTab('bio')" id="nt-bio" class="ntab">🧬 Bio/Science</button>
+        <button onclick="nexusTab('agents')" id="nt-agents" class="ntab">⚡ AI Agents</button>
+      </div>
+
+      <!-- ROTATION tab -->
+      <div id="nexus-rotation" class="nexus-panel">
+        <div class="panel">
+          <div class="p-hdr"><span class="p-title">🔬 SECTOR ROTATION — LIVE BYBIT DATA</span></div>
+          <div id="nexus-secs"></div>
+        </div>
+        <div class="thesis"><div class="th-lbl">NEXUS Rotation Intel</div><div id="nexus-thesis">Loading...</div></div>
+      </div>
+
+      <!-- GPU CLUSTER tab -->
+      <div id="nexus-gpu" class="nexus-panel" style="display:none">
+        <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--accent);display:block;margin-bottom:6px">🖥 GPU COMPUTE CLUSTER — NEXUS INTELLIGENCE</strong>
+          Decentralised GPU compute is the picks-and-shovels play of the AI era. These three projects form a natural cluster — RNDR handles rendering/creative AI, IO.net handles ML training clusters, AETHIR handles enterprise gaming + AI workloads. They are converging infrastructure, not competitors.
+        </div>
+        <div id="gpu-cluster-cards"></div>
+
+        <div class="panel" style="margin-top:12px">
+          <div class="p-hdr"><span class="p-title">📊 GPU CLUSTER — LIVE SIGNALS</span></div>
+          <div id="gpu-signals"></div>
+        </div>
+
+        <div style="background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;margin-top:10px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--accent);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS GPU THESIS</div>
+          <strong style="color:var(--text)">The GPU compute narrative is early innings.</strong> Aethir ($147M ARR, 440K containers, Rev/MC ratio beats Render 4.5x and Filecoin 135x) is the most undervalued. IO.net (327K verified GPUs, $20M ecosystem grant) is the most developer-facing. Render is the most institutionally recognised (Grayscale interest, studio partnerships). <br><br>
+          <strong style="color:var(--green)">Convergence signal:</strong> IO.net and Render have a formal partnership — IO.net uses Render's GPU node network. Aethir partners with 0G (in your watchlist). These aren't separate bets — buying all three is buying the entire decentralised GPU stack at different price points. PHANTOM thesis: if one breaks out, the others follow within 2-3 weeks.
+        </div>
+      </div>
+
+      <!-- ROBOTICS / PHYSICAL AI tab -->
+      <div id="nexus-robotics" class="nexus-panel" style="display:none">
+        <div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--purple);display:block;margin-bottom:6px">🤖 ROBOTICS & PHYSICAL AI — NEXUS INTELLIGENCE</strong>
+          The physical AI cluster connects software intelligence to hardware execution. PEAQ is the L1 backbone for machine economies (Bosch, Airbus, Mastercard partnerships). XNY enables tokenised physical AI agents. VIRTUAL (Virtuals Protocol) creates AI agent frameworks that can control physical systems. ROBO tracks the robotics narrative cross-chain.
+        </div>
+        <div id="robotics-cluster-cards"></div>
+
+        <div class="panel" style="margin-top:12px">
+          <div class="p-hdr"><span class="p-title">📊 ROBOTICS CLUSTER — LIVE SIGNALS</span></div>
+          <div id="robotics-signals"></div>
+        </div>
+
+        <div style="background:var(--surface2);border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:12px 14px;margin-top:10px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--purple);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS ROBOTICS THESIS</div>
+          <strong style="color:var(--text)">Humanoid robotics is a $10T decade-long transition.</strong> PEAQ (founded Till Wandler, Leonard Dorlöcheter, Max Thake — 2017) is the "Ethereum for machines" — 2M+ devices, robots, vehicles onboarded, 60+ live DePINs. The XMAQUINA project on PEAQ is already tokenising autonomous robo-cafés. <br><br>
+          Virtuals Protocol creates AI agent frameworks that bridge digital intelligence to physical systems. XNY is in early formation as a physical-AI narrative token. ROBO provides broader robotics sector exposure. <br><br>
+          <strong style="color:var(--green)">Watch for:</strong> Any humanoid robot IPO (Figure AI, 1X Technologies, Apptronik — all backed or connected to peaq ecosystem) is likely to trigger a PEAQ price re-rating. This is a 6-12 month thesis, not a 1-week trade.
+        </div>
+      </div>
+
+      <!-- INTELLIGENCE LAYER tab -->
+      <div id="nexus-intelligence" class="nexus-panel" style="display:none">
+        <div style="background:rgba(255,176,32,0.04);border:1px solid rgba(255,176,32,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--amber);display:block;margin-bottom:6px">🧠 INTELLIGENCE LAYER — NEXUS INTELLIGENCE</strong>
+          These are the "brains" of the decentralised AI stack. TAO (Bittensor) is the intelligence marketplace — models compete via proof-of-intelligence, 128 subnets live, Bitcoin-like halving (Dec 2025 first halving cut issuance 50%). FET (Fetch.ai / ASI Alliance) builds autonomous economic agents. NEAR is the developer L1 purpose-built for AI agents with on-chain intent execution.
+        </div>
+
+        <!-- Subcluster cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="card" style="border-color:rgba(255,176,32,0.3)">
+            <div class="c-lbl" style="color:var(--amber)">LEADER — TAO</div>
+            <div class="c-val" id="ni-tao-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="ni-tao-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Bittensor</strong><br>
+              Founders: Jacob Steeves (ex-Google) + Ala Shaabana (PhD, U of Toronto)<br>
+              X: <a href="https://x.com/bittensor_" target="_blank" style="color:var(--accent);text-decoration:none">@bittensor_</a><br>
+              Model: proof-of-intelligence, 128 subnets, 21M TAO supply, halving Dec 2025<br>
+              Backed: Polychain Capital $200M+. Grayscale filing Form 10.
+            </div>
+          </div>
+          <div class="card" style="border-color:rgba(255,176,32,0.2)">
+            <div class="c-lbl">PEER — FET / ASI</div>
+            <div class="c-val" id="ni-fet-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="ni-fet-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Fetch.ai → ASI Alliance</strong><br>
+              CEO: Humayun Sheikh<br>
+              X: <a href="https://x.com/Fetch_ai" target="_blank" style="color:var(--accent);text-decoration:none">@Fetch_ai</a><br>
+              Merged with SingularityNET + Ocean → ASI token. Autonomous agent stack. Logistics, energy, DeFi bots.
+            </div>
+          </div>
+          <div class="card" style="border-color:rgba(255,176,32,0.2)">
+            <div class="c-lbl">INFRA — NEAR</div>
+            <div class="c-val" id="ni-near-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="ni-near-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">NEAR Protocol</strong><br>
+              CEO: Illia Polosukhin<br>
+              X: <a href="https://x.com/nearprotocol" target="_blank" style="color:var(--accent);text-decoration:none">@nearprotocol</a><br>
+              "Modular L1 designed for AI to act on behalf of users." AI Intents + Agent execution on-chain.
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:12px 14px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--amber);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS INTELLIGENCE THESIS</div>
+          TAO is the leader — fixed 21M supply, proof-of-intelligence halving model mirrors Bitcoin's scarcity mechanics. Grayscale Form 10 filing signals institutional route incoming. First ETP launched on SIX Swiss Exchange Nov 2025. <strong style="color:var(--amber)">Watch:</strong> Barry Silbert (DCG) publicly backing TAO. FET/ASI is a merger play — three protocols (Fetch, SingularityNET, Ocean) consolidating under ASI token, reducing fragmentation. NEAR is the developer funnel — when AI builders choose a chain, NEAR's positioning as "AI-native L1" makes it a primary beneficiary.
+        </div>
+      </div>
+
+      <!-- DATA / INFRA tab -->
+      <div id="nexus-data" class="nexus-panel" style="display:none">
+        <div style="background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--cyan);display:block;margin-bottom:6px">🔗 DATA & INDEXING INFRA — NEXUS INTELLIGENCE</strong>
+          GRT (The Graph) is the indexing layer for ALL of Web3 — every dApp query goes through The Graph's subgraphs. It's the Google of crypto data. ICP (Internet Computer) runs full dApps 100% on-chain including AI models. 0G (your watchlist) is a decentralised AI OS — data availability + storage + compute in one stack, raised $358M.
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="card" style="border-color:rgba(34,211,238,0.3)">
+            <div class="c-lbl" style="color:var(--cyan)">LEADER — GRT</div>
+            <div class="c-val" id="nd-grt-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="nd-grt-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">The Graph</strong><br>
+              CEO: Yaniv Tal<br>
+              X: <a href="https://x.com/graphprotocol" target="_blank" style="color:var(--accent);text-decoration:none">@graphprotocol</a><br>
+              Indexes every major blockchain. 90+ networks. Powers Uniswap, Aave, Compound. "Google for blockchains."
+            </div>
+          </div>
+          <div class="card" style="border-color:rgba(34,211,238,0.2)">
+            <div class="c-lbl">ON-CHAIN AI — ICP</div>
+            <div class="c-val" id="nd-icp-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="nd-icp-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Internet Computer</strong><br>
+              CEO: Dominic Williams<br>
+              X: <a href="https://x.com/dfinity" target="_blank" style="color:var(--accent);text-decoration:none">@dfinity</a><br>
+              Full dApps + AI models run 100% on-chain. Unique architecture. No external cloud dependency.
+            </div>
+          </div>
+          <div class="card" style="border-color:rgba(34,211,238,0.2)">
+            <div class="c-lbl">AI OS — 0G</div>
+            <div class="c-val" id="nd-0g-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="nd-0g-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">0G Labs</strong><br>
+              CEO: Michael Heinrich<br>
+              X: <a href="https://x.com/0G_labs" target="_blank" style="color:var(--accent);text-decoration:none">@0G_labs</a><br>
+              Raised $358M. DeAIOS: DA + storage + compute. Partners with Aethir, Bittensor, EigenLayer.
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;padding:12px 14px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--cyan);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS DATA THESIS</div>
+          GRT is systematically undervalued as infra — every Web3 dApp query touches The Graph but it trades at a fraction of its actual utility. ICP is the most technically ambitious project in this cluster — if "AI runs 100% on-chain" becomes a real requirement (privacy, auditability), ICP is positioned to be the compute substrate. 0G is the most aggressive new entrant — $358M raised, partnerships with every major AI DePIN, and a clear thesis as the "AWS" of the decentralised AI stack.
+        </div>
+      </div>
+
+      <!-- BIO / SCIENCE tab -->
+      <div id="nexus-bio" class="nexus-panel" style="display:none">
+        <div style="background:rgba(0,232,122,0.04);border:1px solid rgba(0,232,122,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--green);display:block;margin-bottom:6px">🧬 BIO & SCIENCE — NEXUS INTELLIGENCE</strong>
+          BIO Protocol tokenises scientific research — BIO tokens represent ownership and governance rights in biotech DAOs. The thesis: if drugs and biology can be funded and owned by token holders instead of big pharma, the value accrual shifts to the community. This is early-stage but has institutional backing and a growing DAO ecosystem.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="card" style="border-color:rgba(0,232,122,0.3)">
+            <div class="c-lbl" style="color:var(--green)">LEADER — BIO</div>
+            <div class="c-val" id="nb-bio-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="nb-bio-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">BIO Protocol</strong><br>
+              X: <a href="https://x.com/bioprotocol" target="_blank" style="color:var(--accent);text-decoration:none">@bioprotocol</a><br>
+              Tokenises biotech DAOs (VitaDAO, HairDAO, AthenaDAO). Each DAO funds a research vertical. BIO is the meta-governance token across all of them. Real IP being created.
+            </div>
+          </div>
+          <div class="card">
+            <div class="c-lbl">SIGNAL — NMR</div>
+            <div class="c-val" id="nb-nmr-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="nb-nmr-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Numeraire (Numerai)</strong><br>
+              X: <a href="https://x.com/numerai" target="_blank" style="color:var(--accent);text-decoration:none">@numerai</a><br>
+              Hedge fund powered by data scientists staking NMR on their models. AI-driven quant fund. If a model is correct, it earns. If wrong, it burns. Real-world ML tournament at scale.
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 14px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS BIO THESIS</div>
+          BIO Protocol is a pure asymmetric bet: if even one funded DAO produces a successful drug candidate, the resulting IP value massively re-rates the BIO token. The tokenisation of biotech research removes the big pharma middleman. Aethir DAT partnered with Predictive Oncology (NASDAQ: POAI) — a real bridge between AI compute and bio research. NMR (Numerai) is the most mature AI-quant play — real performance-based staking with real destruction of tokens for bad predictions. PHANTOM watch: BIO is in early accumulation — builder activity rising, but narrative not yet mainstream.
+        </div>
+      </div>
+
+      <!-- AI AGENTS tab -->
+      <div id="nexus-agents" class="nexus-panel" style="display:none">
+        <div style="background:rgba(255,69,96,0.04);border:1px solid rgba(255,69,96,0.2);border-radius:9px;padding:14px;margin-bottom:12px;font-size:12px;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--red);display:block;margin-bottom:6px">⚡ AI AGENTS — NEXUS INTELLIGENCE</strong>
+          AI agents are autonomous programs that can transact on-chain, post on X, trade, and coordinate. Virtuals Protocol is the leading AI agent framework on Base — every agent is a tokenised entity. ARC (AI Research Collective / your watchlist) is an emerging agent framework. VIRTUAL is the reserve token of the Virtuals ecosystem.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="card" style="border-color:rgba(255,69,96,0.3)">
+            <div class="c-lbl" style="color:var(--red)">LEADER — VIRTUAL</div>
+            <div class="c-val" id="na-virt-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="na-virt-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Virtuals Protocol</strong><br>
+              X: <a href="https://x.com/virtuals_io" target="_blank" style="color:var(--accent);text-decoration:none">@virtuals_io</a><br>
+              Base L2 AI agent framework. Each agent is a co-owned tokenised entity. LUNA, GAME, 200+ agents. Agent economy reserve token.
+            </div>
+          </div>
+          <div class="card">
+            <div class="c-lbl">EARLY — ARC</div>
+            <div class="c-val" id="na-arc-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="na-arc-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">ARC (AI Research Collective)</strong><br>
+              X: <a href="https://x.com/arc_agi" target="_blank" style="color:var(--accent);text-decoration:none">@arc_agi</a><br>
+              Early-stage AI agent framework. PHANTOM watch. Builder velocity tracked via GitHub. Potential convergence with Virtuals ecosystem.
+            </div>
+          </div>
+          <div class="card">
+            <div class="c-lbl">INFRA — ENSO</div>
+            <div class="c-val" id="na-enso-price" style="color:var(--text)">--</div>
+            <div class="c-sub" id="na-enso-chg">--</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6">
+              <strong style="color:var(--text)">Enso</strong><br>
+              X: <a href="https://x.com/ensofinance" target="_blank" style="color:var(--accent);text-decoration:none">@ensofinance</a><br>
+              DeFi routing and intent execution layer — agents need routing infrastructure to execute multi-step DeFi strategies. Enso is that backbone.
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:12px 14px;font-size:11px;line-height:1.7;">
+          <div style="font-size:8px;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:5px;font-family:'IBM Plex Mono',monospace">NEXUS AGENTS THESIS</div>
+          Virtuals Protocol was the defining narrative of late 2024 — first project to productise AI agents as co-owned, tradeable entities. 200+ agents live. The framework that wins the agent wars becomes the "Apple App Store" of AI. Top accounts to watch: <a href="https://x.com/lookonchain" target="_blank" style="color:var(--accent);text-decoration:none">@lookonchain</a> for smart money accumulation signals, <a href="https://x.com/blknoiz06" target="_blank" style="color:var(--accent);text-decoration:none">@Ansem</a> for narrative velocity, <a href="https://x.com/ai16zdao" target="_blank" style="color:var(--accent);text-decoration:none">@ai16zdao</a> for technical agent alpha.
+        </div>
+      </div>
+
+    </div>
+    <!-- ══ PHANTOM ══ -->
+    <!-- ══ PHANTOM ══ -->
+    <div class="view" id="view-phantom">
+      <div class="agent-hdr">
+        <div class="agent-av" style="background:rgba(167,139,250,0.12)">🎯</div>
+        <div><div class="agent-ttl">PHANTOM — Patterns + Early Signals</div><div class="agent-sub">ASCENDING TRIANGLE • 80% CONVICTION • 5M/15M</div>
+        <div class="chips"><span class="chip on">BYBIT KLINES</span><span class="chip on">5M SCAN</span></div></div>
+      </div>
+      <div id="phantom-alerts"><div class="tri-status"><div style="color:var(--amber)">🔺 Scanning for ascending triangles...</div></div></div>
+      <div class="panel">
+        <div class="p-hdr"><span class="p-title">⚡ PHANTOM CONVICTION CALLS</span><span style="font-size:8px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">REPUTATION STAKED</span></div>
+        <div class="conv-row"><span class="conv-lbl">AKT×RNDR Convergence</span><div class="conv-track"><div class="conv-fill" style="width:78%;background:var(--purple);color:var(--purple)"></div></div><span class="conv-pct" style="color:var(--purple)">78%</span></div>
+        <div class="conv-row"><span class="conv-lbl">TAO Subnet Flywheel</span><div class="conv-track"><div class="conv-fill" style="width:84%;background:var(--purple);color:var(--purple)"></div></div><span class="conv-pct" style="color:var(--purple)">84%</span></div>
+        <div class="conv-row"><span class="conv-lbl">RWA Institutional Phase</span><div class="conv-track"><div class="conv-fill" style="width:71%;background:var(--cyan);color:var(--cyan)"></div></div><span class="conv-pct" style="color:var(--cyan)">71%</span></div>
+        <div class="conv-row"><span class="conv-lbl">HNT 5G Revenue</span><div class="conv-track"><div class="conv-fill" style="width:66%;background:var(--green);color:var(--green)"></div></div><span class="conv-pct" style="color:var(--green)">66%</span></div>
+        <div class="conv-row"><span class="conv-lbl">BIO Protocol Launch</span><div class="conv-track"><div class="conv-fill" style="width:61%;background:var(--amber);color:var(--amber)"></div></div><span class="conv-pct" style="color:var(--amber)">61%</span></div>
+      </div>
+      <div class="thesis" style="border-left-color:var(--purple)"><div class="th-lbl" style="color:var(--purple)">PHANTOM PRIMARY CALL</div><div id="phantom-thesis">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>// ── NAVIGATION (defined first so always available) ──
+function sv(id, el) {
+  var views = document.querySelectorAll('.view');
+  for (var i=0; i<views.length; i++) views[i].classList.remove('visible');
+  var target = document.getElementById('view-'+id);
+  if (target) target.classList.add('visible');
+  var items = document.querySelectorAll('.sb-item');
+  for (var i=0; i<items.length; i++) items[i].classList.remove('active');
+  if (el) el.classList.add('active');
+}
+
+
+const BB = 'https://api.bybit.com';
+const FG_API = 'https://api.alternative.me/fng/?limit=31';
+
+// ══════════════════════════════════════════════
+//  BYBIT API CONFIGURATION
+//  Fill in your keys in the CONFIG block below.
+//  Use READ-ONLY keys for safety.
+//  NEVER share this file with keys filled in.
+// ══════════════════════════════════════════════
+
+const CONFIG = {
+  BYBIT_KEY:    'irg4WOqoPdOJoMos3u',   // ← paste your Bybit API key here
+  BYBIT_SECRET: 'Q87UAgAHmg78jO0Fa2kC0Mvt4QR7f2nSuRwU',   // ← paste your Bybit API secret here
+  USE_PRIVATE:  true, // ← set to true once keys are filled in
+};
+
+// Bybit v5 signature generator
+async function bybitSign(params, secret) {
+  const ts = Date.now().toString();
+  const recvWindow = '5000';
+  const queryStr = Object.keys(params).sort()
+    .map(k => k + '=' + params[k]).join('&');
+  const preSign = ts + CONFIG.BYBIT_KEY + recvWindow + queryStr;
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const msgData = encoder.encode(preSign);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return {
+    ts, recvWindow,
+    sign: Array.from(new Uint8Array(sig))
+      .map(b => b.toString(16).padStart(2,'0')).join('')
+  };
+}
+
+async function bybitPrivate(endpoint, params = {}) {
+  if (!CONFIG.USE_PRIVATE || !CONFIG.BYBIT_KEY || !CONFIG.BYBIT_SECRET) return null;
+  try {
+    const { ts, recvWindow, sign } = await bybitSign(params, CONFIG.BYBIT_SECRET);
+    const qs = Object.keys(params).map(k => k+'='+encodeURIComponent(params[k])).join('&');
+    const url = BB + endpoint + (qs ? '?' + qs : '');
+    const res = await fetch(url, {
+      headers: {
+        'X-BAPI-API-KEY':     CONFIG.BYBIT_KEY,
+        'X-BAPI-TIMESTAMP':   ts,
+        'X-BAPI-RECV-WINDOW': recvWindow,
+        'X-BAPI-SIGN':        sign,
+      }
+    });
+    return await res.json();
+  } catch(e) {
+    console.warn('Bybit private API error:', e.message);
+    return null;
+  }
+}
+
+// ── FETCH POSITIONS ──
+async function fetchPositions() {
+  const data = await bybitPrivate('/v5/position/list', {
+    category: 'linear',
+    settleCoin: 'USDT',
+  });
+  if (!data || data.retCode !== 0) return [];
+  return (data.result?.list || []).filter(p => parseFloat(p.size) > 0);
+}
+
+// ── FETCH ACCOUNT BALANCE ──
+async function fetchBalance() {
+  const data = await bybitPrivate('/v5/account/wallet-balance', {
+    accountType: 'UNIFIED',
+  });
+  if (!data || data.retCode !== 0) return null;
+  const acc = data.result?.list?.[0];
+  if (!acc) return null;
+  return {
+    totalBalance:     parseFloat(acc.totalWalletBalance || 0),
+    totalPnL:         parseFloat(acc.totalPerpUPL || 0),
+    availableBalance: parseFloat(acc.totalAvailableBalance || 0),
+    marginBalance:    parseFloat(acc.totalMarginBalance || 0),
+  };
+}
+
+// ── FETCH ORDER HISTORY (last 20) ──
+async function fetchRecentOrders() {
+  const data = await bybitPrivate('/v5/order/history', {
+    category: 'linear',
+    limit: '20',
+  });
+  if (!data || data.retCode !== 0) return [];
+  return data.result?.list || [];
+}
+
+// ── LIVE POSITIONS STORE ──
+var LIVE_POSITIONS = [];
+var LIVE_BALANCE = null;
+
+async function refreshPrivateData() {
+  if (!CONFIG.USE_PRIVATE) return;
+  try {
+    const [positions, balance] = await Promise.all([
+      fetchPositions(),
+      fetchBalance(),
+    ]);
+    LIVE_POSITIONS = positions || [];
+    LIVE_BALANCE = balance;
+    renderPositionsPanel();
+    renderBalanceBar();
+    updateGoalTracker();
+    // Post to chat
+    if (typeof postScanToChat === 'function') {
+      postPositionsToChat();
+    }
+  } catch(e) {
+    console.warn('Private data refresh error:', e);
+  }
+}
+
+// ── RENDER POSITIONS PANEL ──
+function renderPositionsPanel() {
+  var el = document.getElementById('live-positions-panel');
+  if (!el) return;
+  if (!CONFIG.USE_PRIVATE) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:24px;margin-bottom:8px">&#128273;</div><strong style="color:var(--text)">Add Bybit API keys to see live positions</strong><br><br>Open HTML in text editor, find CONFIG block, fill in keys, set USE_PRIVATE:true</div>';
+    return;
+  }
+  if (!LIVE_POSITIONS || LIVE_POSITIONS.length === 0) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">No open positions</div>';
+    return;
+  }
+  var out = '';
+  for (var i=0; i<LIVE_POSITIONS.length; i++) {
+    var p = LIVE_POSITIONS[i];
+    var isLong = p.side === 'Buy';
+    var mark = parseFloat(p.markPrice||0);
+    var entry = parseFloat(p.avgPrice||0);
+    var liq = parseFloat(p.liqPrice||0);
+    var pnl = parseFloat(p.unrealisedPnl||0);
+    var sym = p.symbol.replace('USDT','');
+    var lev = p.leverage||'?';
+    var dist = liq>0 ? Math.abs(((mark-liq)/mark)*100).toFixed(1) : '--';
+    var liqCol = parseFloat(dist)<2?'var(--red)':parseFloat(dist)<5?'var(--amber)':'var(--green)';
+    var pnlCol = pnl>=0?'var(--green)':'var(--red)';
+    var sideCol = isLong?'var(--green)':'var(--red)';
+    var sl = p.stopLoss ? '$'+parseFloat(p.stopLoss).toFixed(4) : 'not set';
+    var tp = p.takeProfit ? '$'+parseFloat(p.takeProfit).toFixed(4) : 'not set';
+    out += '<div style="background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:8px;border-left:3px solid '+sideCol+'">';
+    out += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    out += '<span style="font-size:14px;font-weight:700">'+sym+'</span>';
+    out += '<span style="font-size:10px;background:'+(isLong?'rgba(0,232,122,.15)':'rgba(255,69,96,.15)')+';color:'+sideCol+';padding:2px 8px;border-radius:4px">'+(isLong?'LONG':'SHORT')+' '+lev+'x</span>';
+    out += '<span style="font-size:18px;font-weight:700;color:'+pnlCol+'">'+(pnl>=0?'+':'')+'$'+pnl.toFixed(2)+'</span>';
+    out += '</div>';
+    out += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">';
+    out += pos_cell('ENTRY','$'+entry.toFixed(4),'var(--text)');
+    out += pos_cell('MARK','$'+mark.toFixed(4),'var(--text)');
+    out += pos_cell('LIQ','$'+liq.toFixed(4),'var(--red)');
+    out += pos_cell('TO LIQ',dist+'%',liqCol);
+    out += '</div>';
+    out += '<div style="font-size:10px;color:var(--amber)">SL: '+sl+' | TP: '+tp+'</div>';
+    out += '</div>';
+  }
+  el.innerHTML = out;
+
+function pos_cell(label, val, color) {
+  return '<div style="background:var(--surface);border-radius:6px;padding:7px;text-align:center">'
+    + '<div style="font-size:9px;color:var(--muted);margin-bottom:2px">'+label+'</div>'
+    + '<div style="font-size:12px;font-weight:700;color:'+(color||'var(--text)')+'">'+val+'</div>'
+    + '</div>';
+}
+
+// ── RENDER BALANCE BAR ──
+function renderBalanceBar() {
+  var el = document.getElementById('hdr-balance');
+  if (el && LIVE_BALANCE) {
+    el.textContent = '$'+LIVE_BALANCE.totalBalance.toFixed(2);
+    el.style.color = LIVE_BALANCE.totalPnL>=0 ? 'var(--green)' : 'var(--red)';
+  }
+  var sbal = document.getElementById('sb-balance');
+  if (sbal && LIVE_BALANCE) {
+    sbal.innerHTML = '<div style="padding:8px 13px">'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">BALANCE</div>'
+      + '<div style="font-size:18px;font-weight:700;color:'+(LIVE_BALANCE.totalPnL>=0?'var(--green)':'var(--red)')+'">$'+LIVE_BALANCE.totalBalance.toFixed(2)+'</div>'
+      + '<div style="font-size:10px;color:var(--muted)">PnL: '+(LIVE_BALANCE.totalPnL>=0?'+':'')+'$'+LIVE_BALANCE.totalPnL.toFixed(2)+'</div>'
+      + '</div>';
+  }
+}
+
+// ── POST POSITIONS TO CHAT ──
+
+// Update house goal tracker
+function updateGoalTracker() {
+  var current = (LIVE_BALANCE && LIVE_BALANCE.totalBalance) ? LIVE_BALANCE.totalBalance : 6.55;
+  var target = 10000;
+  var pct = (current / target * 100);
+  var el = document.getElementById('goal-current');
+  if (el) el.textContent = '$'+current.toFixed(2);
+  var bar = document.getElementById('goal-bar');
+  if (bar) bar.style.width = Math.max(0.05, pct)+'%';
+  var pctEl = document.getElementById('goal-pct');
+  if (pctEl) pctEl.textContent = pct.toFixed(3)+'% of target';
+  if (LIVE_BALANCE) {
+    var bsum = document.getElementById('balance-summary');
+    if (bsum) {
+      bsum.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 0">'
+        + pos_cell('TOTAL BALANCE','$'+LIVE_BALANCE.totalBalance.toFixed(2),LIVE_BALANCE.totalBalance>10?'var(--green)':'var(--amber)')
+        + pos_cell('UNREALISED PnL',(LIVE_BALANCE.totalPnL>=0?'+':'')+'$'+LIVE_BALANCE.totalPnL.toFixed(2),LIVE_BALANCE.totalPnL>=0?'var(--green)':'var(--red)')
+        + pos_cell('AVAILABLE','$'+LIVE_BALANCE.availableBalance.toFixed(2),'var(--accent)')
+        + '</div>';
+    }
+    var chip = document.getElementById('api-status-chip');
+    if (chip) { chip.textContent='API: CONNECTED'; chip.style.background='rgba(0,232,122,.15)'; chip.style.color='var(--green)'; }
+    var guide = document.getElementById('api-setup-guide');
+    if (guide) guide.style.display='none';
+  }
+}
+
+
+function postPositionsToChat() {
+  if (!LIVE_POSITIONS || LIVE_POSITIONS.length === 0) return;
+  try {
+    var msg = LIVE_POSITIONS.map(function(p) {
+      var pnl = parseFloat(p.unrealisedPnl||0);
+      var sym = p.symbol.replace('USDT','');
+      var liq = parseFloat(p.liqPrice||0);
+      var mark = parseFloat(p.markPrice||0);
+      var dist = liq>0 ? Math.abs(((mark-liq)/mark)*100).toFixed(1) : '--';
+      var warn = parseFloat(dist)<3 ? ' WARN:liq '+dist+'% away' : '';
+      return sym+' '+(p.side==='Buy'?'LONG':'SHORT')+' '+p.leverage+'x: '+(pnl>=0?'+':'')+'$'+pnl.toFixed(2)+warn;
+    }).join(' | ');
+    if (typeof cpAddMsg === 'function') {
+      cpAddMsg('all',{name:'HYDRA',icon:'&#128202;',col:'var(--amber)',bg:'rgba(255,176,32,.1)'},'Positions: '+msg,false,false);
+    }
+  } catch(e) { console.warn('postPositionsToChat:',e); }
+}
+
+
+
+const WL = [
+  {s:'BTCUSDT',  l:'BTC',    sec:'MACRO',   ag:'HYDRA',  tri:true},
+  {s:'ETHUSDT',  l:'ETH',    sec:'MACRO',   ag:'HYDRA',  tri:true},
+  {s:'SOLUSDT',  l:'SOL',    sec:'L1',      ag:'HYDRA',  tri:false},
+  {s:'XRPUSDT',  l:'XRP',    sec:'MACRO',   ag:'HYDRA',  tri:false},
+  {s:'DOGEUSDT', l:'DOGE',   sec:'MEME',    ag:'NEXUS',  tri:false},
+  {s:'HYPEUSDT', l:'HYPE',   sec:'DEPIN',   ag:'NEXUS',  tri:false},
+  {s:'NEARUSDT', l:'NEAR',   sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'TAOUSDT',  l:'TAO',    sec:'AI',      ag:'CIPHER', tri:true},
+  {s:'VIRTUALUSDT',l:'VIRTUAL',sec:'AI',    ag:'CIPHER', tri:false},
+  {s:'ICPUSDT',  l:'ICP',    sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'RENDERUSDT',l:'RNDR',  sec:'DEPIN',   ag:'CIPHER', tri:true},
+  {s:'GRTUSDT',  l:'GRT',    sec:'INFRA',   ag:'NEXUS',  tri:false},
+  {s:'BIOUSDT',  l:'BIO',    sec:'DEPIN',   ag:'NEXUS',  tri:true},
+  {s:'ARCUSDT',  l:'ARC',    sec:'AI',      ag:'PHANTOM',tri:true},
+  {s:'NMRUSDT',  l:'NMR',    sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'AXSUSDT',  l:'AXS',    sec:'GAMEFI',  ag:'NEXUS',  tri:false},
+  {s:'STRKUSDT', l:'STRK',   sec:'L2',      ag:'NEXUS',  tri:false},
+  {s:'LINKUSDT', l:'LINK',   sec:'ORACLE',  ag:'NEXUS',  tri:false},
+  {s:'WHITEUSDT',l:'WHITE',  sec:'DEFI',    ag:'PHANTOM',tri:true},
+  {s:'ONDOUSDT', l:'ONDO',   sec:'RWA',     ag:'NEXUS',  tri:true},
+  {s:'IOUSDT',   l:'IOU',    sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'ROBOUSDT', l:'ROBO',   sec:'AI',      ag:'CIPHER', tri:true},
+  {s:'0GUSDT',   l:'0G',     sec:'AI',      ag:'CIPHER', tri:true},
+  {s:'XNYUSDT',  l:'XNY',    sec:'MEME',    ag:'NEXUS',  tri:false},
+  {s:'PIPPINUSDT',l:'PIPPI', sec:'MEME',    ag:'NEXUS',  tri:false},
+  {s:'RIVERUSDT',l:'RIVER',  sec:'DEFI',    ag:'NEXUS',  tri:false},
+  {s:'AKTUSDT',  l:'AKT',    sec:'DEPIN',   ag:'CIPHER', tri:true},
+  {s:'PHAUSDT',  l:'PHA',    sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'FETUSDT',  l:'FET',    sec:'AI',      ag:'CIPHER', tri:false},
+  {s:'INJUSDT',  l:'INJ',    sec:'DEFI',    ag:'NEXUS',  tri:false},
+];
+
+
+// Q1 2026 ACTUAL REVENUE - Source: @DamiDefi Mar 21 2026
+// "Price follows revenue. Always has. Always will."
+const AI_REVENUE_Q1_2026 = {
+  'TAOUSDT':     { rev: 43.2,  rank: 1,  label: 'TAO',     color: 'var(--accent)' },
+  'VIRTUALUSDT': { rev: 2.87,  rank: 2,  label: 'VIRTUAL', color: 'var(--cyan)'   },
+  'LINKUSDT':    { rev: 2.1,   rank: 3,  label: 'LINK',    color: '#2563eb'       },
+  'RENDERUSDT':  { rev: 1.2,   rank: 4,  label: 'RENDER',  color: '#dc2626'       },
+  'IOUSDT':      { rev: 0.9,   rank: 5,  label: 'IO',      color: '#0ea5e9'       },
+  'AKTUSDT':     { rev: 0.74,  rank: 6,  label: 'AKT',     color: '#ea580c'       },
+  'FETUSDT':     { rev: 0.6,   rank: 7,  label: 'FET',     color: 'var(--muted)'  },
+  'PHAUSDT':     { rev: 0.4,   rank: 8,  label: 'PHA',     color: 'var(--green)'  },
+  'ICPUSDT':     { rev: 0.3,   rank: 9,  label: 'ICP',     color: '#7c3aed'       },
+  'NEARUSDT':    { rev: 0.15,  rank: 10, label: 'NEAR',    color: '#64748b'       },
+};
+
+const LIVE = {t:{}, f:{}, oi:{}, kl:{}, tri:[], fg:[]};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function fp(p) {
+  p = parseFloat(p||0);
+  if (!p) return '--';
+  if (p < 0.0001) return '$'+p.toFixed(6);
+  if (p < 0.01)   return '$'+p.toFixed(5);
+  if (p < 1)      return '$'+p.toFixed(4);
+  if (p < 100)    return '$'+p.toFixed(2);
+  return '$'+p.toLocaleString('en-US',{maximumFractionDigits:2});
+}
+
+function fgColor(v) {
+  v = parseInt(v||50);
+  if (v <= 25) return 'var(--red)';
+  if (v <= 45) return '#ff8c42';
+  if (v <= 55) return 'var(--amber)';
+  if (v <= 75) return '#a8e63d';
+  return 'var(--green)';
+}
+
+async function bybit(path) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch(BB+path, {signal: ctrl.signal});
+    clearTimeout(timer);
+    const j = await r.json();
+    return j.result||{};
+  } catch(e) { return {}; }
+}
+
+async function fetchFG() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch(FG_API, {signal: ctrl.signal});
+    clearTimeout(timer);
+    const j = await r.json();
+    LIVE.fg = j.data || [];
+  } catch(e) { LIVE.fg = []; }
+}
+
+async function fetchTickers() {
+  const d = await bybit('/v5/market/tickers?category=linear');
+  (d.list||[]).forEach(t => { LIVE.t[t.symbol] = t; });
+}
+
+async function fetchFunding(sym) {
+  const d = await bybit('/v5/market/funding/history?category=linear&symbol='+(sym)+'&limit=8');
+  const r = d.list||[];
+  if (!r.length) return;
+  const cur = parseFloat(r[0].fundingRate||0);
+  const avg = r.reduce((s,x)=>s+parseFloat(x.fundingRate||0),0)/r.length;
+  LIVE.f[sym] = {
+    cur, avg, pct:(cur*100).toFixed(4)+'%',
+    sig: cur<-0.01?'SHORTS_SQUEEZABLE':cur>0.05?'LONGS_OVEREXTENDED':cur<0?'SLIGHT_BEARISH':'NEUTRAL'
+  };
+}
+
+async function fetchOI(sym) {
+  const d = await bybit('/v5/market/open-interest?category=linear&symbol='+(sym)+'&intervalTime=1h&limit=24');
+  const l = d.list||[];
+  if (l.length<2) return;
+  const lat = parseFloat(l[0].openInterest||0);
+  const old = parseFloat(l[l.length-1].openInterest||lat);
+  const chg = old?(lat-old)/old*100:0;
+  LIVE.oi[sym] = {cur:lat, chgPct:chg.toFixed(2)+'%', trend:chg>5?'STRONGLY UP':chg>1?'UP':chg<-5?'STRONGLY DOWN':chg<-1?'DOWN':'FLAT'};
+}
+
+async function fetchKlines(sym, iv, lim=60) {
+  const d = await bybit('/v5/market/kline?category=linear&symbol='+(sym)+'&interval='+(iv)+'&limit='+(lim)+'');
+  const l = (d.list||[]).map(k=>k.map(parseFloat));
+  LIVE.kl[sym+'_'+iv] = l;
+  return l;
+}
+
+function detectTri(klines) {
+  if (!klines||klines.length<20) return {det:false,brk:false};
+  const ch = [...klines].reverse();
+  const w = Math.min(40,ch.length);
+  const sl = ch.slice(-w);
+  const hi=sl.map(k=>k[2]), lo=sl.map(k=>k[3]), cl=sl.map(k=>k[4]), vo=sl.map(k=>k[5]);
+  const mxH=Math.max(...hi);
+  const nh=hi.filter(h=>h>=mxH*0.996).length;
+  const mid=Math.floor(w/2);
+  const ea=lo.slice(0,mid).reduce((a,b)=>a+b,0)/mid;
+  const re=lo.slice(mid).reduce((a,b)=>a+b,0)/(w-mid);
+  const ri=re>ea*1.002;
+  const avgV=vo.slice(0,-1).reduce((a,b)=>a+b,0)/Math.max(vo.length-1,1);
+  const vsp=vo[vo.length-1]>avgV*1.4;
+  const lc=cl[cl.length-1];
+  const brk=lc>mxH*1.001&&vsp;
+  return {det:nh>=3&&ri, brk, res:mxH, entry:mxH*1.002, stop:Math.min(...lo.slice(-5))*0.998, target:mxH+(mxH-Math.min(...lo)), vsp, touches:nh, conv:brk&&vsp?80:65};
+}
+
+async function scanTriangles() {
+  LIVE.tri=[];
+  for (const item of WL.filter(w=>w.tri)) {
+    for (const tf of ['5','15']) {
+      const kl = await fetchKlines(item.s,tf,60);
+      const r = detectTri(kl);
+      if (r.brk||r.det) LIVE.tri.push({...r,sym:item.s,lbl:item.l,tf:tf+'m'});
+    }
+    await sleep(200);
+  }
+}
+
+// ── RENDER ──
+
+function renderFG() {
+  const data = LIVE.fg;
+  if (!data||!data.length) return;
+  const cur  = data[0];
+  const yest = data[1];
+  const week = data[7];
+  const mnth = data[30];
+  const val  = parseInt(cur.value||50);
+  const cls  = cur.value_classification||'Neutral';
+  const col  = fgColor(val);
+
+  // Header
+  document.getElementById('hdr-fg').textContent = val;
+  document.getElementById('hdr-fg').style.color = col;
+
+  // Sidebar mini
+  document.getElementById('sb-fg-val').textContent = val;
+  document.getElementById('sb-fg-val').style.color = col;
+  document.getElementById('sb-fg-class').textContent = cls;
+  document.getElementById('sb-fg-class').style.color = col;
+  document.getElementById('sb-fg-needle').style.left = val+'%';
+
+  // Big gauge
+  document.getElementById('fg-big-val').textContent = val;
+  document.getElementById('fg-big-val').style.color = col;
+  document.getElementById('fg-big-class').textContent = cls.toUpperCase();
+  document.getElementById('fg-big-class').style.color = col;
+
+  // Rotate needle: -90deg = 0, 0deg = 50, +90deg = 100
+  const angle = (val/100)*180 - 90;
+  document.getElementById('fg-needle-group').setAttribute('transform','rotate('+(angle)+', 90, 90)');
+
+  // History
+  if (yest) { document.getElementById('fg-y').textContent=yest.value; document.getElementById('fg-y').style.color=fgColor(yest.value); }
+  if (week) { document.getElementById('fg-w').textContent=week.value; document.getElementById('fg-w').style.color=fgColor(week.value); }
+  if (mnth) { document.getElementById('fg-m').textContent=mnth.value; document.getElementById('fg-m').style.color=fgColor(mnth.value); }
+
+  // Signal box
+  const sigBox = document.getElementById('fg-signal-box');
+  if (val<=25)      { sigBox.textContent='🟢 EXTREME FEAR - Historically a strong buying zone. Be greedy when others are fearful.'; sigBox.style.color='var(--green)'; }
+  else if (val<=45) { sigBox.textContent='🟡 FEAR - Market is cautious. Look for accumulation opportunities on dips.'; sigBox.style.color='var(--amber)'; }
+  else if (val<=55) { sigBox.textContent='⚪ NEUTRAL - No strong sentiment edge. Follow price action and derivatives.'; sigBox.style.color='var(--muted)'; }
+  else if (val<=75) { sigBox.textContent='🟡 GREED - Market is optimistic. Trail stops, take partial profits on strength.'; sigBox.style.color='var(--amber)'; }
+  else              { sigBox.textContent='🔴 EXTREME GREED - Market overextended. Caution: corrections likely. Reduce leverage.'; sigBox.style.color='var(--red)'; }
+
+  // Overview card
+  document.getElementById('ov-market').textContent = 'F&G: '+(val)+' ('+(cls)+'). '+(val<40?'Fear zone - buying opportunity.':val>70?'Greed zone - take profits.':'Neutral - follow price action.')+'';
+  document.getElementById('ov-mb').textContent = cls.toUpperCase().slice(0,6);
+}
+
+function renderTicker() {
+  [['BTC','BTCUSDT'],['ETH','ETHUSDT'],['SOL','SOLUSDT'],['TAO','TAOUSDT'],
+   ['RNDR','RENDERUSDT'],['AKT','AKTUSDT'],['HYPE','HYPEUSDT'],['XRP','XRPUSDT'],['DOGE','DOGEUSDT']
+  ].forEach(([l,s])=>{
+    const t=LIVE.t[s]||{};
+    const c=parseFloat(t.price24hPcnt||0)*100;
+    const pe=document.getElementById('t-'+l.toLowerCase());
+    const ce=document.getElementById('tc-'+l.toLowerCase());
+    if(pe) pe.textContent=fp(t.lastPrice).replace('$','');
+    if(ce){ ce.textContent=(c>=0?'+':'')+c.toFixed(2)+'%'; ce.className=(c>=0?'up':'dn'); }
+  });
+}
+
+function renderHydra() {
+  const bf=LIVE.f['BTCUSDT']||{}, ef=LIVE.f['ETHUSDT']||{};
+  const boi=LIVE.oi['BTCUSDT']||{}, eoi=LIVE.oi['ETHUSDT']||{};
+  const bt=LIVE.t['BTCUSDT']||{};
+  const isFri=new Date().getUTCDay()===5;
+  const cur=parseFloat(bf.cur||0);
+  const col=cur<0?'var(--green)':cur>0.03?'var(--red)':'var(--amber)';
+
+  document.getElementById('h-f-btc').innerHTML='<span style="color:'+(col)+'">'+(bf.pct||'--')+'</span>';
+  document.getElementById('h-f-btc-s').textContent=bf.sig||'--';
+  document.getElementById('h-f-eth').innerHTML='<span style="color:var(--muted)">'+(ef.pct||'--')+'</span>';
+  document.getElementById('h-f-eth-s').textContent=ef.sig||'--';
+  const oiv=boi.cur?'$'+(boi.cur/1e9).toFixed(2)+'B':'--';
+  const oic=(boi.trend||'').includes('UP')?'var(--green)':(boi.trend||'').includes('DOWN')?'var(--red)':'var(--amber)';
+  document.getElementById('h-oi-btc').innerHTML='<span style="color:'+(oic)+'">'+(oiv)+'</span>';
+  document.getElementById('h-oi-btc-s').textContent=boi.trend||'--';
+  document.getElementById('h-oi-eth').innerHTML='<span style="color:var(--muted)">'+(eoi.trend||'--')+'</span>';
+  document.getElementById('h-oi-eth-s').textContent=eoi.chgPct||'--';
+  const bc=parseFloat(bt.price24hPcnt||0)*100;
+  document.getElementById('h-btc-c').innerHTML='<span class="'+(bc>=0?'up':'dn')+'">'+(bc>=0?'+':'')+(bc.toFixed(2))+'%</span>';
+  document.getElementById('h-btc-p').textContent=fp(bt.lastPrice);
+  document.getElementById('h-fri').innerHTML=isFri?'<span style="color:var(--red)">⚠ TODAY</span>':'<span style="color:var(--muted)">NO</span>';
+  document.getElementById('h-fri-s').textContent=isFri?'Elevated gamma risk':'Standard day';
+
+  const sigs=WL.filter(w=>w.ag==='HYDRA').map(item=>{
+    const t=LIVE.t[item.s]||{}, f=LIVE.f[item.s]||{};
+    const c=parseFloat(t.price24hPcnt||0)*100, fc=parseFloat(f.cur||0);
+    let v='WAIT',col='var(--amber)',bc='bw',conf=50;
+    if(fc<-0.005&&c>0){v='LONG';col='var(--green)';bc='bl';conf=Math.min(88,62+Math.abs(fc)*800);}
+    else if(fc>0.03&&c<0){v='SHORT';col='var(--red)';bc='bs';conf=62;}
+    return '<div class="sig-row"><span class="sig-sym">'+(item.l)+'/USDT</span><span class="sig-dir" style="color:'+(col)+'">'+(v)+'</span><div class="sig-bw"><div class="sig-b" style="width:'+(conf)+'%;background:'+(col)+'"></div></div><span class="sig-c" style="color:'+(col)+'">'+(conf)+'%</span><button class="sig-btn '+(bc)+'">'+(v==='LONG'?'ENTER ':v==='SHORT'?'ENTER ↘':'WATCH')+'</button></div>';
+  }).join('');
+  document.getElementById('hydra-sigs').innerHTML=sigs;
+  document.getElementById('h-sig-count').textContent=WL.filter(w=>w.ag==='HYDRA').length+' SYMBOLS';
+
+  const thesis=cur<-0.01?'BTC funding negative ('+(bf.pct)+') - shorts paying longs. Classic squeeze setup. OI trend '+(boi.trend||'flat')+'. '+(isFri?'⚠ Friday expiry today adds gamma risk.':'')+' Lean long on dips.':cur>0.03?'BTC funding elevated ('+(bf.pct)+') - longs overextended. Reversal risk high. Reduce leverage. '+(isFri?'⚠ Friday expiry today.':'')+'':
+    'BTC funding neutral ('+(bf.pct)+'). No extreme derivatives signal. OI '+(boi.trend||'stable')+'. Follow price action. '+(isFri?'⚠ Friday expiry - watch options strikes.':'')+'';
+  document.getElementById('hydra-thesis').textContent=thesis;
+  document.getElementById('hydra-badge').textContent=cur<0?'LONG BIAS':cur>0.03?'SHORT BIAS':'NEUTRAL';
+  document.getElementById('coord-hydra').textContent=cur<0?'LONG BIAS':cur>0.03?'SHORT BIAS':'NEUTRAL';
+  document.getElementById('coord-hydra').style.color=cur<0?'var(--green)':cur>0.03?'var(--red)':'var(--amber)';
+  document.getElementById('ov-hydra').textContent='BTC '+(fp(bt.lastPrice))+': Funding '+(bf.pct||'N/A')+' ['+(bf.sig||'N/A')+']. OI '+(boi.trend||'N/A')+'.';
+  document.getElementById('ov-hb').textContent=cur<0?'LONG':cur>0.03?'SHORT':'NEUTRAL';
+}
+
+function renderCipher() {
+  // Revenue chart bars
+  const maxRev = 43.2;
+  const revHtml = Object.entries(AI_REVENUE_Q1_2026)
+    .sort((a,b) => b[1].rev - a[1].rev)
+    .map(([sym, d]) => {
+      const t = LIVE.t[sym]||{};
+      const chg = parseFloat(t.price24hPcnt||0)*100;
+      const barPct = (d.rev / maxRev * 100).toFixed(1);
+      const mcap = parseFloat(t.lastPrice||0) * parseFloat(t.openInterest||1);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border)"> <div style="font-size:10px;font-family:monospace;font-weight:700;min-width:58px;color:var(--text)">'+(d.label)+'</div> <div style="flex:1;height:20px;background:var(--surface2);border-radius:4px;overflow:hidden;position:relative"> <div style="height:100%;width:'+(barPct)+'%;background:'+(d.color)+';opacity:0.85;border-radius:4px;transition:width 1s ease;display:flex;align-items:center;padding-left:8px"> <span style="font-size:10px;font-family:monospace;font-weight:700;color:#fff;white-space:nowrap">$'+(d.rev)+'M</span> </div> </div> <span style="font-size:9px;font-family:monospace;min-width:60px;text-align:right"> <span class="'+(chg>=0?'up':'dn')+'">'+(chg>=0?'+':'')+(chg.toFixed(2))+'%</span> </span> <span style="font-size:9px;font-family:monospace;color:var(--muted);min-width:16px;text-align:right">#'+(d.rank)+'</span> </div>';
+
+
+
+
+
+
+
+
+
+
+
+    }).join('');
+  const revEl = document.getElementById('cipher-rev-chart');
+  if(revEl) revEl.innerHTML = revHtml;
+
+  // CEO table
+  const ceos = [
+    {sym:'TAOUSDT',    name:'Bittensor',       ceo:'Jacob Steeves (ex-Google) + Ala Shaabana', x:'@bittensor_',    xurl:'https://x.com/bittensor_',    rev:'$43.2M', note:'Polychain backed. Grayscale Form 10. Halving Dec 2025.'},
+    {sym:'VIRTUALUSDT',name:'Virtuals Protocol',ceo:'Team anon / @virtuals_io',               x:'@virtuals_io',   xurl:'https://x.com/virtuals_io',   rev:'$2.87M', note:'200+ AI agents on Base. LUNA, GAME tokens.'},
+    {sym:'LINKUSDT',   name:'Chainlink',        ceo:'Sergey Nazarov',                          x:'@chainlink',     xurl:'https://x.com/chainlink',     rev:'$2.1M',  note:'Oracle monopoly. CCIP cross-chain expansion.'},
+    {sym:'RENDERUSDT', name:'Render Network',   ceo:'Jules Urbach',                            x:'@rendernetwork', xurl:'https://x.com/rendernetwork', rev:'$1.2M',  note:'Apple partnership. IO.net integration.'},
+    {sym:'IOUSDT',     name:'IO.net',           ceo:'Gaurav Sharma',                           x:'@io_net',        xurl:'https://x.com/io_net',        rev:'$0.9M',  note:'327K GPUs. IO Intelligence 25 models.'},
+    {sym:'AKTUSDT',    name:'Akash Network',    ceo:'Greg Osuri',                              x:'@gregosuri',     xurl:'https://x.com/gregosuri',     rev:'$0.74M', note:'85% cheaper than AWS. AI workloads 300% QoQ.'},
+    {sym:'FETUSDT',    name:'Fetch.ai / ASI',   ceo:'Humayun Sheikh',                          x:'@Fetch_ai',      xurl:'https://x.com/Fetch_ai',      rev:'$0.6M',  note:'Merged: Fetch + SingularityNET + Ocean = ASI.'},
+    {sym:'PHAUSDT',    name:'Phala Network',    ceo:'Hang Yin',                                x:'@PhalaNetwork',  xurl:'https://x.com/PhalaNetwork',  rev:'$0.4M',  note:'Confidential cloud computing. TEE-based privacy AI. NEW ADDITION.'},
+    {sym:'ICPUSDT',    name:'Internet Computer',ceo:'Dominic Williams',                        x:'@dfinity',       xurl:'https://x.com/dfinity',       rev:'$0.3M',  note:'Full dApps + AI 100% on-chain. No external cloud.'},
+    {sym:'NEARUSDT',   name:'NEAR Protocol',    ceo:'Illia Polosukhin',                        x:'@ilblackdragon', xurl:'https://x.com/ilblackdragon', rev:'$0.15M', note:'AI-native L1. Intents + agent execution on-chain.'},
+  ];
+
+  const ceoHtml = ceos.map(c => {
+    const t = LIVE.t[c.sym]||{};
+    const chg = parseFloat(t.price24hPcnt||0)*100;
+    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start"> <div style="min-width:60px;font-size:11px;font-weight:700;font-family:monospace;color:var(--text)">'+(c.sym.replace('USDT',''))+'</div> <div style="flex:1"> <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px">'+(c.name)+' - '+(c.ceo)+'</div> <div style="font-size:10px;color:var(--muted);line-height:1.5">'+(c.note)+'</div> </div> <div style="text-align:right;flex-shrink:0"> <div style="font-size:11px;font-weight:700;color:var(--green);font-family:monospace">'+(c.rev)+'</div> <a href="'+(c.xurl)+'" target="_blank" style="font-size:9px;color:var(--purple);text-decoration:none;font-family:monospace">'+(c.x)+' </a> <div style="font-size:9px;font-family:monospace"><span class="'+(chg>=0?'up':'dn')+'">'+(chg>=0?'+':'')+(chg.toFixed(2))+'%</span></div> </div> </div>';
+
+
+
+
+
+
+
+
+
+
+
+  }).join('');
+  const ceoEl = document.getElementById('cipher-ceos');
+  if(ceoEl) ceoEl.innerHTML = ceoHtml;
+
+
+  const sigs=WL.filter(w=>w.ag==='CIPHER').map(item=>{
+    const t=LIVE.t[item.s]||{}, f=LIVE.f[item.s]||{};
+    const c=parseFloat(t.price24hPcnt||0)*100, fc=parseFloat(f.cur||0);
+    let v='WATCH',col='var(--purple)',conf=60;
+    if(c>3&&fc<0){v='ACCUM';conf=Math.min(88,65+c*3);}
+    else if(c<-5){v='REDUCE';col='var(--red)';conf=65;}
+    return '<div class="sig-row"><span class="sig-sym">'+(item.l)+'</span><span class="sig-dir" style="color:'+(col)+'">'+(v)+'</span><div class="sig-bw"><div class="sig-b" style="width:'+(conf)+'%;background:'+(col)+'"></div></div><span class="sig-c" style="color:'+(col)+'">'+(conf)+'%</span><span style="font-size:9px;color:var(--muted);font-family:monospace">'+(fp(t.lastPrice))+' <span class="'+(c>=0?'up':'dn')+'">'+(c>=0?'+':'')+(c.toFixed(1))+'%</span></span></div>';
+  }).join('');
+  document.getElementById('cipher-sigs').innerHTML=sigs;
+  const tt=LIVE.t['TAOUSDT']||{}, rt=LIVE.t['RENDERUSDT']||{};
+  document.getElementById('cipher-thesis').textContent='TAO (Bittensor - Jacob Steeves): Decentralised ML marketplace, subnet flywheel model. '+(fp(tt.lastPrice))+' ('+((parseFloat(tt.price24hPcnt||0)*100).toFixed(2))+'% 24h). RNDR (Render - Jules Urbach): GPU compute for AI/rendering, real revenue. '+(fp(rt.lastPrice))+'. AKT (Akash - Greg Osuri): Decentralised cloud, 85% cheaper than AWS. Key PHANTOM thesis: AKTxRNDR convergence forming - builder activity surging.';
+}
+
+function renderOracle() {
+  const bt=LIVE.t['BTCUSDT']||{};
+  const isFri=new Date().getUTCDay()===5;
+  const bc=parseFloat(bt.price24hPcnt||0)*100;
+  const rl=isFri?'ELEVATED':Math.abs(bc)>5?'HIGH':'MEDIUM';
+  const rc=rl==='ELEVATED'||rl==='HIGH'?'var(--red)':'var(--amber)';
+  document.getElementById('o-risk').innerHTML='<span style="color:'+(rc)+'">'+(rl)+'</span>';
+  document.getElementById('o-risk-s').textContent=isFri?'Friday expiry':'BTC vol signal';
+  document.getElementById('o-mode').innerHTML='<span class="'+(bc>0?'up':'dn')+'">'+(bc>=0?'RISK-ON':'RISK-OFF')+'</span>';
+  document.getElementById('o-fri').innerHTML=isFri?'<span style="color:var(--red)">⚠ TODAY</span>':'NO';
+  document.getElementById('o-fri-s').textContent=isFri?'Gamma exposure elevated':'Normal day';
+
+  const items=[
+    {c:Math.abs(bc)>5?'var(--red)':'var(--amber)',t:'BTC '+(bc>=0?'+':'')+(bc.toFixed(2))+'% 24h - '+(bc>5?'strong momentum, watch exhaustion':bc<-5?'heavy selling, check macro':bc>2?'bullish momentum':'consolidation mode')+'',m:'BYBIT LIVE',tag:'LIVE',tc:'var(--accent)'},
+    {c:isFri?'var(--red)':'var(--muted)',t:isFri?'⚠ FRIDAY OPTIONS EXPIRY - Max pain + gamma exposure elevated. Expect vol around BTC/ETH key strikes. Reduce leverage 20%.':'Standard trading day - no options expiry event.',m:'OPTIONS CALENDAR',tag:isFri?'HIGH':'LOW',tc:isFri?'var(--red)':'var(--muted)'},
+    {c:'var(--muted)',t:'DXY, 10Y yields, Fed language: check Bloomberg/Yahoo Finance for live macro. ORACLE watches: Fed pivot language, unemployment spikes, China liquidity injections, TGA drain.',m:'BLOOMBERG RSS - open for live feed',tag:'EXTERNAL',tc:'var(--muted)'},
+  ];
+  document.getElementById('oracle-news').innerHTML=items.map(n=>'<div class="news-row"><div class="news-bar" style="background:'+(n.c)+'"></div><div style="flex:1"><div class="news-ttl">'+(n.t)+'</div><div class="news-meta">'+(n.m)+'</div></div><span class="news-tag" style="background:'+(n.tc)+'22;color:'+(n.tc)+'">'+(n.tag)+'</span></div>').join('');
+  document.getElementById('oracle-thesis').textContent='The straw most likely to break this cycle: Fed language pivot to "no cuts" + unemployment spike above 4.5% simultaneously. Secondary: China property contagion resurfacing. DXY below 104 = green light for crypto. '+(isFri?'⚠ TODAY is Friday - options expiry creates extra volatility. Watch max pain on BTC and ETH.':'No major expiry today.');
+  document.getElementById('oracle-badge').textContent=rl;
+  document.getElementById('coord-oracle').textContent=rl;
+  document.getElementById('coord-oracle').style.color=rc;
+}
+
+function renderNexus() {
+  const secPerf={};
+  WL.forEach(item=>{
+    const t=LIVE.t[item.s]||{};
+    const c=parseFloat(t.price24hPcnt||0)*100;
+    if(!secPerf[item.sec]) secPerf[item.sec]={sum:0,n:0};
+    secPerf[item.sec].sum+=c; secPerf[item.sec].n+=1;
+  });
+  const sorted=Object.entries(secPerf).map(([s,d])=>({s,avg:d.sum/d.n})).sort((a,b)=>b.avg-a.avg);
+  const labels={'MACRO':'Macro','AI':'AI Infra','DEPIN':'DePIN','DEFI':'DeFi','L1':'L1','L2':'Layer 2','MEME':'Meme','GAMEFI':'GameFi','RWA':'RWA','INFRA':'Infra','ORACLE':'Oracle'};
+  const html=sorted.map(({s,avg})=>{
+    const col=avg>3?'var(--green)':avg>0?'var(--cyan)':avg>-3?'var(--amber)':'var(--red)';
+    const sig=avg>3?'🔥 HOT':avg>1?'↑ BUILDING':avg>-1?'→ NEUTRAL':avg>-3?'↓ COOLING':'🔴 AVOID';
+    const conf=Math.min(100,Math.abs(avg)*15+40);
+    return '<div class="sec-row"><span class="sec-nm" style="color:'+(col)+'">'+(labels[s]||s)+'</span><span style="font-size:9px;font-family:monospace;min-width:70px;color:'+(col)+'">'+(sig)+'</span><div class="sig-bw" style="flex:1"><div class="sig-b" style="width:'+(conf)+'%;background:'+(col)+'"></div></div><span style="font-size:10px;font-family:monospace;color:'+(col)+';min-width:46px;text-align:right">'+(avg>=0?'+':'')+(avg.toFixed(2))+'%</span></div>';
+  }).join('');
+  document.getElementById('nexus-secs').innerHTML=html;
+
+  // Market view sectors
+  document.getElementById('mkt-sectors').innerHTML=html;
+
+  const hot=sorted[0];
+  document.getElementById('nexus-thesis').textContent='Live sector performance: '+(labels[hot?.s]||hot?.s||'N/A')+' leading at '+(hot?.avg?.toFixed(2)||'--')+'% avg 24h. '+(sorted.slice(-1)[0]?.s)+' weakest. DefiLlama: connect to defillama.com/api for live TVL. Rotate into momentum sectors - follow the money.';
+  document.getElementById('nexus-badge').textContent=(labels[hot?.s]||hot?.s||'--').slice(0,6);
+  document.getElementById('coord-nexus').textContent=(hot?.avg||0)>0?'ROTATING ↑':'FLAT';
+  document.getElementById('coord-nexus').style.color=(hot?.avg||0)>0?'var(--green)':'var(--amber)';
+}
+
+function renderMarket() {
+  const bt=LIVE.t['BTCUSDT']||{}, et=LIVE.t['ETHUSDT']||{};
+  const bf=LIVE.f['BTCUSDT']||{}, boi=LIVE.oi['BTCUSDT']||{};
+  const bc=parseFloat(bt.price24hPcnt||0)*100, ec=parseFloat(et.price24hPcnt||0)*100;
+  const isFri=new Date().getUTCDay()===5;
+  const fgVal=LIVE.fg[0]?parseInt(LIVE.fg[0].value):50;
+
+  document.getElementById('ms-btc-p').textContent=fp(bt.lastPrice);
+  document.getElementById('ms-btc-c').innerHTML='<span class="'+(bc>=0?'up':'dn')+'">'+(bc>=0?'+':'')+(bc.toFixed(2))+'%</span>';
+  document.getElementById('ms-eth-p').textContent=fp(et.lastPrice);
+  document.getElementById('ms-eth-c').innerHTML='<span class="'+(ec>=0?'up':'dn')+'">'+(ec>=0?'+':'')+(ec.toFixed(2))+'%</span>';
+  document.getElementById('ms-btc-f').innerHTML='<span style="color:'+(parseFloat(bf.cur||0)<0?'var(--green)':'var(--amber)')+'">'+(bf.pct||'--')+' ['+(bf.sig||'--')+']</span>';
+  document.getElementById('ms-btc-oi').innerHTML='<span style="color:'+((boi.trend||'').includes('UP')?'var(--green)':'var(--amber)')+'">'+(boi.trend||'--')+' '+(boi.chgPct||'')+'</span>';
+  document.getElementById('ms-friday').innerHTML=isFri?'<span style="color:var(--red)">⚠ TODAY - Gamma risk elevated</span>':'<span style="color:var(--muted)">No</span>';
+  const cond=fgVal>70&&bc>3?'EXTREME GREED - CAUTION':fgVal>55&&bc>0?'GREED - TRAIL STOPS':fgVal<30&&bc<0?'EXTREME FEAR - BUY ZONE':fgVal<45?'FEAR - ACCUMULATE':'NEUTRAL - FOLLOW PRICE';
+  document.getElementById('ms-condition').innerHTML='<span style="color:'+(fgColor(fgVal))+'">'+(cond)+'</span>';
+}
+
+function renderPhantom() {
+  const brk=LIVE.tri.filter(t=>t.brk), form=LIVE.tri.filter(t=>t.det&&!t.brk);
+  let html='';
+  brk.forEach(t=>{html+='<div class="alert-box"><div class="alert-ttl">⚡ BREAKOUT - '+(t.lbl)+' '+(t.tf)+' | '+(t.conv)+'% Conviction</div><div class="alert-row">Resistance broken<span>'+(fp(t.res))+'</span></div><div class="alert-row">Entry zone<span>~'+(fp(t.entry))+'</span></div><div class="alert-row">Stop loss<span>'+(fp(t.stop))+'</span></div><div class="alert-row">Target<span style="color:var(--green)">'+(fp(t.target))+'</span></div><div class="alert-row">Volume spike<span>'+(t.vsp?'✓ Confirmed':'✗ Weak')+'</span></div><div class="alert-row">Resistance touches<span>'+(t.touches)+'</span></div></div>';});
+  if(form.length) html+='<div class="tri-status"><div style="color:var(--amber)">Patterns forming:</div>'+form.map(function(t){return '<div> '+t.lbl+' '+t.tf+' resistance '+fp(t.res)+' | '+t.touches+' touches</div>';}).join('')+'</div>';
+  if(!brk.length&&!form.length) html='<div class="tri-status"><div>✓ No ascending triangles this scan</div><div style="color:var(--muted)">Scanned '+(WL.filter(w=>w.tri).length)+' symbols x 5m + 15m</div></div>';
+  document.getElementById('phantom-alerts').innerHTML=html;
+  document.getElementById('phantom-badge').textContent=brk.length?brk.length+' BREAK':'WATCH';
+  document.getElementById('coord-phantom').textContent=brk.length?brk.length+' BREAK':'WATCHING';
+  document.getElementById('coord-phantom').style.color=brk.length?'var(--red)':'var(--purple)';
+  document.getElementById('phantom-thesis').textContent='AKTxRNDR convergence: GPU compute + AI training. TAO subnet flywheel active. '+(brk.length ? brk.length+' triangle breakout(s) this scan.' : 'No breakouts this scan.');
+}
+
+function renderWatchlist() {
+  const html=WL.map(item=>{
+    const t=LIVE.t[item.s]||{}, f=LIVE.f[item.s]||{}, oi=LIVE.oi[item.s]||{};
+    const c=parseFloat(t.price24hPcnt||0)*100, fc=parseFloat(f.cur||0);
+    const fc2=fc<0?'var(--green)':fc>0.03?'var(--red)':'var(--muted)';
+    const oc=(oi.trend||'').includes('UP')?'var(--green)':(oi.trend||'').includes('DOWN')?'var(--red)':'var(--muted)';
+    let v='WAIT',vc='verdict-wait';
+    if(fc<-0.005&&c>0){v='LONG';vc='';} else if(fc>0.03&&c<0){v='SHORT';vc='';}
+    const vcol=v==='LONG'?'var(--green)':v==='SHORT'?'var(--red)':'var(--muted)';
+    return '<tr><td class="sym-c">'+(item.l)+'</td><td>'+(fp(t.lastPrice))+'</td><td><span class="'+(c>=0?'up':'dn')+'">'+(c>=0?'+':'')+(c.toFixed(2))+'%</span></td><td><span style="color:'+(fc2)+'">'+(f.pct||'--')+'</span></td><td><span style="color:'+(oc)+'">'+(oi.trend||'--')+'</span></td><td style="color:var(--muted)">'+(item.ag)+'</td><td style="color:var(--muted)">'+(item.sec)+'</td><td style="color:'+(vcol)+';font-weight:700">'+(v)+'</td></tr>';
+  }).join('');
+  document.getElementById('wl-tbody').innerHTML=html;
+  const wt=document.getElementById('wl-time');
+  if(wt) wt.textContent=new Date().toUTCString().slice(0,25)+' UTC';
+}
+
+function renderOverview() {
+  const bf=LIVE.f['BTCUSDT']||{}, boi=LIVE.oi['BTCUSDT']||{};
+  const isFri=new Date().getUTCDay()===5;
+  const cur=parseFloat(bf.cur||0);
+  const brk=LIVE.tri.filter(t=>t.brk).length;
+  const fgVal=LIVE.fg[0]?parseInt(LIVE.fg[0].value):50;
+  const fgCls=LIVE.fg[0]?LIVE.fg[0].value_classification:'Unknown';
+
+  document.getElementById('coord-thesis').textContent=
+    'BTC funding '+(bf.pct||'N/A')+' ['+(bf.sig||'N/A')+']. OI '+(boi.trend||'N/A')+'. F&G: '+(fgVal)+' ('+(fgCls)+'). '+ +
+    ''+(cur<-0.01?'HYDRA: LONG BIAS - shorts squeezable. ':cur>0.03?'HYDRA: SHORT RISK - longs overextended. ':'Derivatives neutral. ')+''+ +
+    (brk ? 'PHANTOM: '+brk+' triangle breakout(s) active. ' : '') +
+    ''+(isFri?'⚠ FRIDAY OPTIONS EXPIRY - size down 20%. ':'Sector AI+DePIN leading. ')+''+ +
+    'LookOnChain: monitor @lookonchain for institutional flow alerts. Priority: TAO, RNDR, AKT.';
+
+  const longs=WL.filter(w=>{const f=LIVE.f[w.s]||{};return parseFloat(f.cur||0)<-0.005;}).length;
+  const shorts=WL.filter(w=>{const f=LIVE.f[w.s]||{};return parseFloat(f.cur||0)>0.03;}).length;
+  const total=WL.length;
+  const lp=Math.round(longs/total*100), sp=Math.round(shorts/total*100), np=100-lp-sp;
+  document.getElementById('cb-bull').style.width=lp+'%';
+  document.getElementById('cb-neut').style.width=np+'%';
+  document.getElementById('cb-bear').style.width=sp+'%';
+  document.getElementById('bull-pct').textContent=lp+'%L';
+  document.getElementById('neut-pct').textContent=np+'%';
+  document.getElementById('bear-pct').textContent=sp+'%S';
+}
+
+function setLoad(t,s){document.getElementById('lt').textContent=t;document.getElementById('ls').textContent=s;}
+function hideLoad(){var l=document.getElementById('loading');if(l){l.classList.add('hidden');l.style.display='none';}}
+
+function updateCGData() {
+  const fg  = prompt("CoinGlass F&G index (number):", "11");
+  const rsi = prompt("AVG RSI:", "43.32");
+  const alt = prompt("Altcoin Season Index:", "51");
+  if(fg) {
+    const n=parseInt(fg);
+    const col=n<=25?"var(--red)":n<=45?"#ff8c42":n<=55?"var(--amber)":n<=75?"#a8e63d":"var(--green)";
+    const cls=n<=25?"EXTREME FEAR":n<=45?"FEAR":n<=55?"NEUTRAL":n<=75?"GREED":"EXTREME GREED";
+    const e1=document.getElementById("cg-fg-big"); if(e1){e1.textContent=n;e1.style.color=col;}
+    const e2=document.getElementById("cg-fg-cls"); if(e2){e2.textContent=cls;e2.style.color=col;}
+    const e3=document.getElementById("ms-cg-fg");  if(e3){e3.textContent=n+" - "+cls;e3.style.color=col;}
+  }
+  if(rsi){const e=document.getElementById("cg-rsi-big");if(e)e.textContent=parseFloat(rsi).toFixed(2);}
+  if(alt){const e=document.getElementById("cg-alt-big");if(e)e.textContent=parseInt(alt);}
+  const ts=document.getElementById("cg-timestamp");
+  if(ts) ts.textContent="Updated: "+new Date().toUTCString().slice(0,22)+" UTC";
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('rbtn');
+  if (btn) { btn.disabled=true; btn.textContent='↻ LOADING...'; }
+
+  // Fetch all data with individual timeouts - never blocks
+  try { await fetchFG(); renderFG(); } catch(e) {}
+  try { await fetchTickers(); renderTicker(); } catch(e) {}
+
+  const syms = ['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','RENDERUSDT','AKTUSDT'];
+  for (const s of syms) { try { await fetchFunding(s); } catch(e) {} await sleep(60); }
+  try { await fetchOI('BTCUSDT'); } catch(e) {}
+  try { await fetchOI('ETHUSDT'); } catch(e) {}
+  try { await scanTriangles(); } catch(e) {}
+
+  try { renderHydra(); } catch(e) {}
+  try { renderCipher(); } catch(e) {}
+  try { renderOracle(); } catch(e) {}
+  try { renderNexus(); } catch(e) {}
+  try { renderPhantom(); } catch(e) {}
+  try { renderMarket(); } catch(e) {}
+  try { renderOverview(); } catch(e) {}
+  try { renderWatchlist(); } catch(e) {}
+
+  const u = document.getElementById('last-update');
+  if (u) u.textContent = new Date().toUTCString().slice(0,25)+' UTC';
+  const d = document.getElementById('hdr-dom');
+  if (d) d.textContent = '~54%';
+
+  if (btn) { btn.disabled=false; btn.textContent='↻ REFRESH'; }
+  if (typeof refreshPrivateData==='function' && CONFIG.USE_PRIVATE) {
+    try { refreshPrivateData(); } catch(e) {}
+  }
+}
+
+// sv() moved to top
+
+
+function nexusTab(name) {
+  document.querySelectorAll('.nexus-panel').forEach(p => p.style.display='none');
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('ntab-active'));
+  document.getElementById('nexus-'+name).style.display='block';
+  document.getElementById('nt-'+name).classList.add('ntab-active');
+  if(name==='gpu') renderGPUCluster();
+  if(name==='robotics') renderRoboticsCluster();
+  if(name==='intelligence') renderIntelligenceCluster();
+  if(name==='data') renderDataCluster();
+  if(name==='bio') renderBioCluster();
+  if(name==='agents') renderAgentsCluster();
+}
+
+function clusterCard(sym, lbl, desc, color) {
+  const t = LIVE.t[sym]||{};
+  const f = LIVE.f[sym]||{};
+  const chg = parseFloat(t.price24hPcnt||0)*100;
+  const fc = parseFloat(f.cur||0);
+  let verdict='WATCH', vc='var(--amber)';
+  if(fc<-0.005&&chg>0){verdict='LONG';vc='var(--green)';}
+  else if(fc>0.03&&chg<0){verdict='SHORT';vc='var(--red)';}
+  return '<div class="card" style="border-color:'+(color)+'33">  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">    <div>   <div style="font-size:13px;font-weight:700;color:var(--text)">'+(lbl)+'</div>   <div style="font-size:10px;color:var(--muted);font-family:monospace;margin-top:2px">'+(fp(t.lastPrice))+' <span class="'+(chg>=0?'up':'dn')+'">'+(chg>=0?'+':'')+(chg.toFixed(2))+'%</span></div>    </div>    <span style="font-size:10px;font-family:monospace;color:'+(vc)+';padding:2px 7px;border-radius:4px;background:'+(vc)+'22">'+(verdict)+'</span>  </div>  <div style="font-size:10px;color:var(--muted);line-height:1.6">'+(desc)+'</div>  <div style="margin-top:8px;display:flex;gap:8px;font-size:9px;font-family:monospace;color:var(--muted)">    <span>Funding: <span style="color:'+(parseFloat(f.cur||0)<0?'var(--green)':'var(--muted)')+'">'+(f.pct||'--')+'</span></span>    <span>[' + (f.sig||'--') + ']</span>  </div>   </div>';
+}
+
+function clusterSigRow(sym, lbl, color) {
+  const t=LIVE.t[sym]||{}, f=LIVE.f[sym]||{};
+  const chg=parseFloat(t.price24hPcnt||0)*100, fc=parseFloat(f.cur||0);
+  let v='WAIT',col='var(--amber)',conf=50;
+  if(fc<-0.005&&chg>0){v='LONG';col='var(--green)';conf=Math.min(85,60+Math.abs(fc)*800);}
+  else if(fc>0.03&&chg<0){v='SHORT';col='var(--red)';conf=62;}
+  return '<div class="sig-row"><span class="sig-sym">'+(lbl)+'</span><span class="sig-dir" style="color:'+(col)+'">'+(v)+'</span><div class="sig-bw"><div class="sig-b" style="width:'+(conf)+'%;background:'+(col)+'"></div></div><span class="sig-c" style="color:'+(col)+'">'+(conf)+'%</span><span style="font-size:9px;color:var(--muted);font-family:monospace">'+(fp(t.lastPrice))+'</span></div>';
+}
+
+function renderGPUCluster() {
+  document.getElementById('gpu-cluster-cards').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">  '+(clusterCard('RENDERUSDT','RNDR - Render Network','CEO: Jules Urbach | @rendernetwork | GPU rendering + AI compute. Studio partnerships. Real revenue: $2.1M+ monthly fees. SOL migration complete. io.net partnership formalised.','var(--accent)'))+' +  '+(clusterCard('IOUSDT','IO - IO.net','CEO: Gaurav Sharma | @io_net | 327K verified GPUs, 70-90% cheaper than AWS. IO Intelligence platform: 25 open-source AI models. $20M grant fund. Co-staking marketplace launched Feb 2025.','var(--accent)'))+' +  '+(clusterCard('ATHUSDT','ATH - Aethir','CSO: Mark Rydon | @AethirCloud | $166M ARR, 440K containers, 94 countries. Most revenue-efficient DePIN: beats Render 4.5x Rev/MC. B300 GPUs onboarding. $344M DAT treasury.','var(--accent)'))+'   </div>';
+  document.getElementById('gpu-signals').innerHTML =
+    clusterSigRow('RENDERUSDT','RNDR','var(--accent)') +
+    clusterSigRow('IOUSDT','IO.net','var(--accent)') +
+    clusterSigRow('ATHUSDT','ATH','var(--accent)');
+}
+
+function renderRoboticsCluster() {
+  document.getElementById('robotics-cluster-cards').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">  '+(clusterCard('PEAQUSDT','PEAQ - Machine Economy L1','Founders: Till Wandler + Max Thake | @peaq | L1 for DePIN + robotics. 2M+ machines onboarded. Partners: Bosch, Airbus, Mastercard. 60+ live DePINs. XMAQUINA tokenised robo-café.','var(--purple)'))+' +  '+(clusterCard('VIRTUALUSDT','VIRTUAL - Virtuals Protocol','@virtuals_io | AI agent framework on Base. 200+ agents. LUNA, GAME. Agents are co-owned tokenised entities. Physical AI control layer emerging.','var(--purple)'))+' +  '+(clusterCard('XNYUSDT','XNY','@xnycrypto | Physical AI agent narrative token. Early stage. PHANTOM watch for builder momentum.','var(--purple)'))+'   </div>';
+  document.getElementById('robotics-signals').innerHTML =
+    clusterSigRow('PEAQUSDT','PEAQ','var(--purple)') +
+    clusterSigRow('VIRTUALUSDT','VIRTUAL','var(--purple)') +
+    clusterSigRow('XNYUSDT','XNY','var(--purple)') +
+    clusterSigRow('ROBOUSDT','ROBO','var(--purple)');
+}
+
+function renderIntelligenceCluster() {
+  const setP = (id, sym) => {
+    const t=LIVE.t[sym]||{}; const c=parseFloat(t.price24hPcnt||0)*100;
+    const pe=document.getElementById(id+'-price'); const ce=document.getElementById(id+'-chg');
+    if(pe) pe.textContent=fp(t.lastPrice);
+    if(ce){ ce.textContent=(c>=0?'+':'')+c.toFixed(2)+'%'; ce.className='c-sub '+(c>=0?'up':'dn'); }
+  };
+  setP('ni-tao','TAOUSDT'); setP('ni-fet','FETUSDT'); setP('ni-near','NEARUSDT');
+}
+
+function renderDataCluster() {
+  const setP = (id, sym) => {
+    const t=LIVE.t[sym]||{}; const c=parseFloat(t.price24hPcnt||0)*100;
+    const pe=document.getElementById(id+'-price'); const ce=document.getElementById(id+'-chg');
+    if(pe) pe.textContent=fp(t.lastPrice);
+    if(ce){ ce.textContent=(c>=0?'+':'')+c.toFixed(2)+'%'; ce.className='c-sub '+(c>=0?'up':'dn'); }
+  };
+  setP('nd-grt','GRTUSDT'); setP('nd-icp','ICPUSDT'); setP('nd-0g','0GUSDT');
+}
+
+function renderBioCluster() {
+  const setP = (id, sym) => {
+    const t=LIVE.t[sym]||{}; const c=parseFloat(t.price24hPcnt||0)*100;
+    const pe=document.getElementById(id+'-price'); const ce=document.getElementById(id+'-chg');
+    if(pe) pe.textContent=fp(t.lastPrice);
+    if(ce){ ce.textContent=(c>=0?'+':'')+c.toFixed(2)+'%'; ce.className='c-sub '+(c>=0?'up':'dn'); }
+  };
+  setP('nb-bio','BIOUSDT'); setP('nb-nmr','NMRUSDT');
+}
+
+function renderAgentsCluster() {
+  const setP = (id, sym) => {
+    const t=LIVE.t[sym]||{}; const c=parseFloat(t.price24hPcnt||0)*100;
+    const pe=document.getElementById(id+'-price'); const ce=document.getElementById(id+'-chg');
+    if(pe) pe.textContent=fp(t.lastPrice);
+    if(ce){ ce.textContent=(c>=0?'+':'')+c.toFixed(2)+'%'; ce.className='c-sub '+(c>=0?'up':'dn'); }
+  };
+  setP('na-virt','VIRTUALUSDT'); setP('na-arc','ARCUSDT'); setP('na-enso','ENSOUSDT');
+}
+
+window.addEventListener('load', () => {
+  sv('overview', document.querySelector('.sb-item'));
+  // Render immediately with empty data so dashboard shows right away
+  try { renderOverview(); } catch(e) {}
+  // Then fetch data in background
+  setTimeout(refreshAll, 100);
+  // Background refresh every 30s
+  setInterval(async () => { try { await fetchTickers(); renderTicker(); } catch(e) {} }, 30000);
+  setInterval(async () => { try { await fetchFG(); renderFG(); } catch(e) {} }, 600000);
+});
+}
+</script>
+
+
+
+
+</body>
+</html>
