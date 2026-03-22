@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUANT-OPS v2.3</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0c10;--surface:#0f1218;--surface2:#151b24;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);
+  --text:#e8eaf0;--muted:#6b7890;
+  --accent:#00d4ff;--green:#00e87a;--red:#ff4560;--amber:#ffb020;--purple:#a78bfa;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;height:100vh;overflow:hidden;}
+
+/* HEADER */
+header{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:fixed;top:0;left:0;right:0;z-index:100;}
+.logo{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;}
+.hdr-r{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--muted);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.refresh-btn{background:var(--accent);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em;}
+.refresh-btn:hover{opacity:.85;}
+
+/* TICKER */
+.ticker{height:32px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:20px;overflow-x:auto;margin-top:44px;flex-shrink:0;}
+.ticker::-webkit-scrollbar{display:none;}
+.tick-item{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:11px;}
+.tick-sym{font-weight:700;color:var(--text);}
+.tick-p{font-family:monospace;}
+.up{color:var(--green);}
+.dn{color:var(--red);}
+
+/* SHELL */
+.shell{display:grid;grid-template-columns:180px 1fr;height:calc(100vh - 76px - 52px);}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:8px 0;}
+.sb-sec{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.12em;padding:8px 13px 4px;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;}
+.sb-item:hover{background:rgba(255,255,255,.04);border-left-color:var(--accent);}
+.sb-item.active{background:rgba(0,212,255,.06);border-left-color:var(--accent);}
+.sb-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.sb-name{font-size:12px;font-weight:600;}
+.sb-role{font-size:9px;color:var(--muted);}
+.sb-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:auto;font-family:monospace;}
+.bull{background:rgba(0,232,122,.15);color:var(--green);}
+.bear{background:rgba(255,69,96,.15);color:var(--red);}
+.watch{background:rgba(255,176,32,.15);color:var(--amber);}
+.divider{height:1px;background:var(--border);margin:6px 0;}
+
+/* CONTENT */
+.content{overflow-y:auto;background:var(--bg);}
+.view{display:none;padding:16px;}
+.view.active{display:block;}
+
+/* F&G SIDEBAR */
+.fg-sidebar{padding:10px 13px;border-top:1px solid var(--border);}
+.fg-label{font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:700;letter-spacing:.08em;}
+.fg-val{font-size:22px;font-weight:700;margin-bottom:2px;}
+.fg-cls{font-size:10px;margin-bottom:6px;}
+.fg-bar{height:6px;background:linear-gradient(to right,var(--red),var(--amber),var(--green));border-radius:3px;position:relative;margin-bottom:4px;}
+.fg-dot{width:10px;height:10px;border-radius:50%;background:#fff;position:absolute;top:-2px;transform:translateX(-50%);border:2px solid var(--bg);}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.panel-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;}
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.agent-card{background:var(--surface2);border-radius:8px;padding:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.agent-card:hover{border-color:var(--accent);}
+.ac-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ac-icon{font-size:18px;}
+.ac-name{font-size:12px;font-weight:700;}
+.ac-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-family:monospace;font-weight:700;margin-left:auto;}
+.ac-body{font-size:11px;color:var(--muted);line-height:1.6;}
+
+/* WATCHLIST */
+.wl-table{width:100%;border-collapse:collapse;}
+.wl-table th{font-size:9px;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:700;letter-spacing:.08em;}
+.wl-table td{font-size:11px;padding:6px 8px;border-bottom:1px solid var(--border);font-family:monospace;}
+.wl-table tr:hover td{background:rgba(255,255,255,.02);}
+.wl-sym{font-weight:700;color:var(--text);font-family:monospace;}
+
+/* OVERVIEW */
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.ov-stat{background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border);text-align:center;}
+.ov-val{font-size:20px;font-weight:700;font-family:monospace;margin-bottom:2px;}
+.ov-lbl{font-size:9px;color:var(--muted);letter-spacing:.08em;}
+
+/* CHAT */
+.chat-bar{position:fixed;bottom:0;left:180px;right:0;height:52px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;z-index:50;}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:12px;padding:8px 16px;outline:none;}
+.chat-input:focus{border-color:var(--accent);}
+.chat-send{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#000;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* CHAT PANEL */
+.chat-panel{position:fixed;bottom:52px;right:0;width:360px;height:400px;background:var(--surface);border-left:1px solid var(--border);border-top:1px solid var(--border);display:none;flex-direction:column;z-index:51;}
+.chat-panel.open{display:flex;}
+.chat-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;align-items:center;}
+.chat-close{cursor:pointer;color:var(--muted);font-size:16px;}
+.chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;}
+.msg{padding:8px 10px;border-radius:8px;font-size:11px;line-height:1.6;max-width:90%;}
+.msg-user{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);align-self:flex-end;}
+.msg-agent{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;}
+.msg-name{font-size:9px;font-weight:700;margin-bottom:2px;font-family:monospace;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">QUANT-OPS // COMMAND CENTER v2.3</div>
+  <div class="hdr-r">
+    <span><span class="live-dot"></span>BYBIT LIVE</span>
+    <span id="hdr-time">--:--:-- UTC</span>
+    <span>F&G: <span id="hdr-fg">--</span></span>
+    <span>BTC DOM: <span id="hdr-dom">~54%</span></span>
+    <button class="refresh-btn" id="rbtn" onclick="refreshAll()">REFRESH</button>
+  </div>
+</header>
+
+<div class="ticker" id="ticker">
+  <span style="font-size:10px;color:var(--muted)">Loading prices...</span>
+</div>
+
+<div class="shell">
+  <div class="sidebar" id="sidebar">
+    <div class="sb-sec">Navigation</div>
+    <div class="sb-item active" onclick="sv('overview',this)">
+      <div class="sb-icon" style="background:rgba(0,212,255,.1)">🧠</div>
+      <div><div class="sb-name">Overview</div><div class="sb-role">COORDINATOR</div></div>
+    </div>
+    <div class="sb-item" onclick="sv('watchlist',this)">
+      <div class="sb-icon" style="background:rgba(0,212,255,.08)">📋</div>
+      <div><div class="sb-name">Watchlist</div><div class="sb-role">27 SYMBOLS</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="sb-sec">Agents</div>
+    <div class="sb-item" onclick="sv('hydra',this)">
+      <div class="sb-icon" style="background:rgba(255,176,32,.1)">📊</div>
+      <div><div class="sb-name">HYDRA</div><div class="sb-role">FUTURES QUANT</div></div>
+      <span class="sb-badge watch" id="hydra-badge">--</span>
+    </div>
+    <div class="sb-item" onclick="sv('cipher',this)">
+      <div class="sb-icon" style="background:rgba(99,102,241,.15)">🤖</div>
+      <div><div class="sb-name">CIPHER</div><div class="sb-role">AI SECTOR</div></div>
+      <span class="sb-badge bull" id="cipher-badge">AI BULL</span>
+    </div>
+    <div class="sb-item" onclick="sv('oracle',this)">
+      <div class="sb-icon" style="background:rgba(239,68,68,.1)">🌐</div>
+      <div><div class="sb-name">ORACLE</div><div class="sb-role">MACRO</div></div>
+      <span class="sb-badge watch" id="oracle-badge">--</span>
+    </div>
+    <div class="sb-item" onclick="sv('nexus',this)">
+      <div class="sb-icon" style="background:rgba(0,232,122,.1)">⛓</div>
+      <div><div class="sb-name">NEXUS</div><div class="sb-role">SECTORS</div></div>
+      <span class="sb-badge watch" id="nexus-badge">--</span>
+    </div>
+    <div class="sb-item" onclick="sv('phantom',this)">
+      <div class="sb-icon" style="background:rgba(167,139,250,.15)">🎯</div>
+      <div><div class="sb-name">PHANTOM</div><div class="sb-role">PATTERNS</div></div>
+      <span class="sb-badge watch" id="phantom-badge">WATCH</span>
+    </div>
+    <div class="divider"></div>
+    <div class="fg-sidebar">
+      <div class="fg-label">FEAR AND GREED</div>
+      <div class="fg-val" id="fg-val" style="color:var(--red)">--</div>
+      <div class="fg-cls" id="fg-cls" style="color:var(--muted)">Loading...</div>
+      <div class="fg-bar"><div class="fg-dot" id="fg-dot" style="left:12%"></div></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <div class="ov-grid">
+        <div class="ov-stat">
+          <div class="ov-val" id="ov-btc" style="color:var(--accent)">--</div>
+          <div class="ov-lbl">BTC PRICE</div>
+        </div>
+        <div class="ov-stat">
+          <div class="ov-val" id="ov-fg" style="color:var(--red)">--</div>
+          <div class="ov-lbl">FEAR AND GREED</div>
+        </div>
+        <div class="ov-stat">
+          <div class="ov-val" id="ov-funding" style="color:var(--amber)">--</div>
+          <div class="ov-lbl">BTC FUNDING</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Agent Status</div>
+        <div class="agent-grid">
+          <div class="agent-card" onclick="sv('hydra',document.querySelector('[onclick*=hydra]'))">
+            <div class="ac-header">
+              <span class="ac-icon">📊</span>
+              <span class="ac-name" style="color:var(--amber)">HYDRA</span>
+              <span class="ac-badge watch" id="ov-hydra-b">--</span>
+            </div>
+            <div class="ac-body" id="ov-hydra-t">Futures quant. Click to expand.</div>
+          </div>
+          <div class="agent-card" onclick="sv('cipher',document.querySelector('[onclick*=cipher]'))">
+            <div class="ac-header">
+              <span class="ac-icon">🤖</span>
+              <span class="ac-name" style="color:var(--purple)">CIPHER</span>
+              <span class="ac-badge bull">AI BULL</span>
+            </div>
+            <div class="ac-body">TAO leads Q1 2026 at $43.2M revenue. GPU cluster thesis intact.</div>
+          </div>
+          <div class="agent-card" onclick="sv('oracle',document.querySelector('[onclick*=oracle]'))">
+            <div class="ac-header">
+              <span class="ac-icon">🌐</span>
+              <span class="ac-name" style="color:var(--red)">ORACLE</span>
+              <span class="ac-badge watch" id="ov-oracle-b">--</span>
+            </div>
+            <div class="ac-body" id="ov-oracle-t">Macro and Fear and Greed. Click to expand.</div>
+          </div>
+          <div class="agent-card" onclick="sv('phantom',document.querySelector('[onclick*=phantom]'))">
+            <div class="ac-header">
+              <span class="ac-icon">🎯</span>
+              <span class="ac-name" style="color:var(--purple)">PHANTOM</span>
+              <span class="ac-badge watch">WATCH</span>
+            </div>
+            <div class="ac-body">AKT x RNDR GPU convergence 78%. TAO subnet flywheel 84%. NMR lag trade 71%.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WATCHLIST -->
+    <div class="view" id="view-watchlist">
+      <div class="panel">
+        <div class="panel-title">Watchlist — 27 Symbols</div>
+        <table class="wl-table">
+          <thead>
+            <tr>
+              <th>SYMBOL</th><th>PRICE</th><th>24H</th><th>FUNDING</th><th>SIGNAL</th>
+            </tr>
+          </thead>
+          <tbody id="wl-body">
+            <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Hit REFRESH to load prices</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HYDRA -->
+    <div class="view" id="view-hydra">
+      <div class="panel">
+        <div class="panel-title">HYDRA - Futures Quant</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <div class="ov-stat"><div class="ov-val" id="h-btc-p" style="color:var(--accent)">--</div><div class="ov-lbl">BTC PRICE</div></div>
+          <div class="ov-stat"><div class="ov-val" id="h-funding" style="color:var(--amber)">--</div><div class="ov-lbl">BTC FUNDING</div></div>
+          <div class="ov-stat"><div class="ov-val" id="h-signal" style="color:var(--green)">--</div><div class="ov-lbl">SIGNAL</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.8;padding:10px;background:var(--surface2);border-radius:8px;" id="hydra-thesis">
+          Hit REFRESH to load derivatives data.
+        </div>
+      </div>
+    </div>
+
+    <!-- CIPHER -->
+    <div class="view" id="view-cipher">
+      <div class="panel">
+        <div class="panel-title">CIPHER - AI Sector Intelligence</div>
+        <div style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.8;">
+          Q1 2026 AI Revenue Rankings (source: @DamiDefi)
+        </div>
+        <table class="wl-table">
+          <thead><tr><th>RANK</th><th>TOKEN</th><th>Q1 REVENUE</th><th>PRICE</th><th>24H</th></tr></thead>
+          <tbody id="cipher-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ORACLE -->
+    <div class="view" id="view-oracle">
+      <div class="panel">
+        <div class="panel-title">ORACLE - Macro Intelligence</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+          <div class="ov-stat"><div class="ov-val" id="or-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR AND GREED</div></div>
+          <div class="ov-stat"><div class="ov-val" id="or-cls" style="color:var(--muted)">--</div><div class="ov-lbl">CLASSIFICATION</div></div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.8;" id="oracle-thesis">
+          Hit REFRESH to load macro data.
+        </div>
+      </div>
+    </div>
+
+    <!-- NEXUS -->
+    <div class="view" id="view-nexus">
+      <div class="panel">
+        <div class="panel-title">NEXUS - Sector Rotation</div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:2;">
+          <div style="margin-bottom:8px;font-weight:700;color:var(--green)">GPU Compute Cluster (Leading)</div>
+          AKT - Akash Network | RNDR - Render Network | IO - IO.net<br>
+          <div style="margin-top:8px;font-weight:700;color:var(--accent)">AI Intelligence Cluster</div>
+          TAO - Bittensor | FET - Fetch.ai | NEAR - Near Protocol<br>
+          <div style="margin-top:8px;font-weight:700;color:var(--purple)">Data / Oracle Cluster</div>
+          GRT - The Graph | LINK - Chainlink | ICP - Internet Computer<br>
+          <div style="margin-top:8px;font-weight:700;color:var(--amber)">Agents Cluster</div>
+          VIRTUAL - Virtuals | ARC - Arc | NMR - Numerai
+        </div>
+      </div>
+    </div>
+
+    <!-- PHANTOM -->
+    <div class="view" id="view-phantom">
+      <div class="panel">
+        <div class="panel-title">PHANTOM - Pattern Detection</div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:2;margin-bottom:10px;" id="phantom-calls">
+          <div style="color:var(--green);font-weight:700;margin-bottom:6px">Active Conviction Calls</div>
+          TAO subnet flywheel — 84% conviction — accumulate dips<br>
+          AKT x RNDR GPU convergence — 78% — spot entry $0.595-0.610<br>
+          NMR lag trade — 71% — entry $7.40-7.55 spot<br>
+          ARC agents early — 68% — watch $0.048-0.050
+        </div>
+        <div id="phantom-triangles" style="font-size:12px;color:var(--muted)">Hit REFRESH to scan for triangles.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CHAT BAR -->
+<div class="chat-bar">
+  <input class="chat-input" id="chat-input" placeholder="Ask the agents anything...">
+  <button class="chat-send" id="chat-send">&#8593;</button>
+</div>
+
+<!-- CHAT PANEL -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <span>AGENT CHANNEL</span>
+    <span class="chat-close" id="chat-close">&#10005;</span>
+  </div>
+  <div class="chat-msgs" id="chat-msgs">
+    <div class="msg msg-agent">
+      <div class="msg-name" style="color:var(--accent)">COORDINATOR</div>
+      All 5 agents online. Ask anything about your watchlist, positions, or market conditions.
+    </div>
+  </div>
+</div>
+
+<script>
+// ── NAVIGATION (always first) ──
+function sv(id, el) {
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) {
+    views[i].classList.remove('active');
+  }
+  var target = document.getElementById('view-' + id);
+  if (target) { target.classList.add('active'); }
+  var items = document.querySelectorAll('.sb-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.remove('active');
+  }
+  if (el && el.classList) { el.classList.add('active'); }
+}
+
+// ── CONFIG ──
+var CONFIG = {
+  BYBIT_KEY: 'irg4WOqoPdOJoMos3u',
+  BYBIT_SECRET: 'Q87UAgAHmg78jO0Fa2kC0Mvt4QR7f2nSuRwU',
+  USE_PRIVATE: true
+};
+
+// ── CONSTANTS ──
+var BB = 'https://api.bybit.com';
+var FG_API = 'https://api.alternative.me/fng/?limit=1';
+
+// ── DATA STORE ──
+var LIVE = { t: {}, f: {}, fg: [], tri: [] };
+
+// ── WATCHLIST ──
+var WL = [
+  {s:'BTCUSDT',l:'BTC'},{s:'ETHUSDT',l:'ETH'},{s:'SOLUSDT',l:'SOL'},
+  {s:'TAOUSDT',l:'TAO'},{s:'RENDERUSDT',l:'RNDR'},{s:'AKTUSDT',l:'AKT'},
+  {s:'NEARUSDT',l:'NEAR'},{s:'ICPUSDT',l:'ICP'},{s:'GRTUSD',l:'GRT'},
+  {s:'NMRUSDT',l:'NMR'},{s:'IOUSDT',l:'IO'},{s:'BIOUSDT',l:'BIO'},
+  {s:'ARCUSDT',l:'ARC'},{s:'STRKUSDT',l:'STRK'},{s:'FETUSDT',l:'FET'},
+  {s:'HYPEUSDT',l:'HYPE'},{s:'XRPUSDT',l:'XRP'},{s:'DOGEUSDT',l:'DOGE'},
+  {s:'VIRTUALUSDT',l:'VIRTUAL'},{s:'PHAUSDT',l:'PHA'},
+  {s:'WHITEUSDT',l:'WHITE'},{s:'XNYUSDT',l:'XNY'},
+  {s:'ONDOUSDT',l:'ONDO'},{s:'LINKUSDT',l:'LINK'},
+  {s:'RIVERUSDT',l:'RIVER'},{s:'AXSUSDT',l:'AXS'},{s:'0GUSDT',l:'0G'}
+];
+
+// ── CIPHER DATA ──
+var CIPHER_DATA = [
+  {sym:'TAOUSDT',  label:'TAO',     rev:'$43.2M', ceo:'Jacob Steeves',  note:'#1 by 15x'},
+  {sym:'VIRTUALUSDT',label:'VIRTUAL',rev:'$2.87M', ceo:'@virtuals_io',   note:'200+ agents'},
+  {sym:'LINKUSDT', label:'LINK',    rev:'$2.1M',  ceo:'Sergey Nazarov', note:'Oracle monopoly'},
+  {sym:'RENDERUSDT',label:'RENDER', rev:'$1.2M',  ceo:'Jules Urbach',   note:'Apple pipeline'},
+  {sym:'IOUSDT',   label:'IO',      rev:'$0.9M',  ceo:'Gaurav Sharma',  note:'327K GPUs'},
+  {sym:'AKTUSDT',  label:'AKT',     rev:'$0.74M', ceo:'Greg Osuri',     note:'85% cheaper than AWS'},
+  {sym:'FETUSDT',  label:'FET',     rev:'$0.6M',  ceo:'Humayun Sheikh', note:'ASI alliance'},
+  {sym:'NMRUSDT',  label:'NMR',     rev:'$0.4M',  ceo:'@numerai',       note:'AI hedge fund'},
+  {sym:'ICPUSDT',  label:'ICP',     rev:'$0.3M',  ceo:'Dominic Williams',note:'Full dApps on-chain'},
+  {sym:'NEARUSDT', label:'NEAR',    rev:'$0.15M', ceo:'Illia Polosukhin',note:'AI-native L1'}
+];
+
+// ── HELPERS ──
+function fp(p) {
+  p = parseFloat(p || 0);
+  if (!p) return '--';
+  if (p < 0.001) return '$' + p.toFixed(6);
+  if (p < 0.1) return '$' + p.toFixed(4);
+  if (p < 10) return '$' + p.toFixed(3);
+  if (p < 1000) return '$' + p.toFixed(2);
+  return '$' + p.toLocaleString('en-US', {maximumFractionDigits: 0});
+}
+
+function pct(v) {
+  var n = parseFloat(v || 0) * 100;
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+
+function sleep(ms) {
+  return new Promise(function(r) { setTimeout(r, ms); });
+}
+
+// ── FETCH WITH TIMEOUT ──
+function fetchWithTimeout(url, ms) {
+  ms = ms || 8000;
+  var proxies = [
+    'https://corsproxy.io/?' + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+  ];
+  function tryProxy(idx) {
+    if (idx >= proxies.length) return Promise.resolve({});
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, ms);
+    return fetch(proxies[idx], { signal: ctrl.signal })
+      .then(function(r) { clearTimeout(timer); return r.json(); })
+      .catch(function() { return tryProxy(idx + 1); });
+  }
+  return tryProxy(0);
+}
+
+// ── API CALLS ──
+function fetchTickers() {
+  return fetchWithTimeout(BB + '/v5/market/tickers?category=linear')
+    .then(function(j) {
+      var list = (j.result && j.result.list) ? j.result.list : [];
+      list.forEach(function(t) { LIVE.t[t.symbol] = t; });
+    }).catch(function() {});
+}
+
+function fetchFunding(sym) {
+  return fetchWithTimeout(BB + '/v5/market/funding/history?category=linear&symbol=' + sym + '&limit=1')
+    .then(function(j) {
+      var list = (j.result && j.result.list) ? j.result.list : [];
+      if (list.length) {
+        var rate = parseFloat(list[0].fundingRate || 0);
+        LIVE.f[sym] = {
+          cur: rate,
+          pct: (rate * 100).toFixed(4) + '%',
+          sig: rate < -0.01 ? 'SQUEEZE' : rate < 0 ? 'SLIGHT_BEAR' : rate > 0.03 ? 'LONGS_HEAVY' : 'NEUTRAL'
+        };
+      }
+    }).catch(function() {});
+}
+
+function fetchFG() {
+  return fetchWithTimeout(FG_API)
+    .then(function(j) {
+      if (j.data && j.data.length) { LIVE.fg = j.data; }
+    }).catch(function() {});
+}
+
+// ── RENDER TICKER ──
+function renderTicker() {
+  var syms = ['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','RENDERUSDT','AKTUSDT','HYPEUSDT','XRPUSDT','DOGEUSDT'];
+  var html = '';
+  syms.forEach(function(s) {
+    var t = LIVE.t[s] || {};
+    var p = parseFloat(t.lastPrice || 0);
+    var c = parseFloat(t.price24hPcnt || 0) * 100;
+    var cls = c >= 0 ? 'up' : 'dn';
+    var lbl = s.replace('USDT', '');
+    html += '<span class="tick-item"><span class="tick-sym">' + lbl + '</span>' +
+      '<span class="tick-p ' + cls + '">' + (p ? fp(p) : '--') + '</span>' +
+      '<span class="' + cls + '" style="font-size:10px">' + (p ? (c >= 0 ? '+' : '') + c.toFixed(2) + '%' : '') + '</span></span>';
+  });
+  document.getElementById('ticker').innerHTML = html || '<span style="color:var(--muted);font-size:11px">Hit REFRESH to load prices</span>';
+}
+
+// ── RENDER F&G ──
+function renderFG() {
+  var fg = LIVE.fg[0];
+  if (!fg) return;
+  var val = parseInt(fg.value);
+  var cls = fg.value_classification;
+  var col = val <= 25 ? 'var(--red)' : val <= 45 ? 'var(--amber)' : val >= 75 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('fg-val').textContent = val;
+  document.getElementById('fg-val').style.color = col;
+  document.getElementById('fg-cls').textContent = cls;
+  document.getElementById('fg-cls').style.color = col;
+  document.getElementById('fg-dot').style.left = val + '%';
+  document.getElementById('hdr-fg').textContent = val;
+  document.getElementById('ov-fg').textContent = val + ' - ' + cls;
+  document.getElementById('ov-fg').style.color = col;
+  document.getElementById('or-fg').textContent = val;
+  document.getElementById('or-fg').style.color = col;
+  document.getElementById('or-cls').textContent = cls;
+  document.getElementById('or-cls').style.color = col;
+  var thesis = val <= 25 ? 'EXTREME FEAR = historically best accumulation zone. Buy quality, not memes.' :
+    val <= 45 ? 'FEAR zone. Market cautious. Smart money accumulating quietly.' :
+    val >= 75 ? 'GREED zone. Take profits. Trail stops up. Reduce leverage.' :
+    'Neutral. Follow price action and Howrie signals.';
+  document.getElementById('oracle-thesis').textContent = 'F&G: ' + val + ' (' + cls + '). ' + thesis;
+  document.getElementById('ov-oracle-b').textContent = val <= 25 ? 'EXT FEAR' : val >= 75 ? 'GREED' : 'NEUTRAL';
+}
+
+// ── RENDER HYDRA ──
+function renderHydra() {
+  var bt = LIVE.t['BTCUSDT'] || {};
+  var bf = LIVE.f['BTCUSDT'] || {};
+  var p = parseFloat(bt.lastPrice || 0);
+  var c = parseFloat(bt.price24hPcnt || 0) * 100;
+  var rate = parseFloat(bf.cur || 0);
+  if (p) {
+    document.getElementById('h-btc-p').textContent = fp(p);
+    document.getElementById('h-btc-p').style.color = c >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  if (bf.pct) {
+    document.getElementById('h-funding').textContent = bf.pct;
+    document.getElementById('h-funding').style.color = rate < 0 ? 'var(--green)' : rate > 0.02 ? 'var(--red)' : 'var(--amber)';
+  }
+  var sig = rate < -0.01 ? 'LONG BIAS' : rate > 0.03 ? 'SHORT RISK' : 'NEUTRAL';
+  var sigCol = rate < -0.01 ? 'var(--green)' : rate > 0.03 ? 'var(--red)' : 'var(--amber)';
+  document.getElementById('h-signal').textContent = sig;
+  document.getElementById('h-signal').style.color = sigCol;
+  document.getElementById('hydra-badge').textContent = sig;
+  document.getElementById('hydra-badge').className = 'sb-badge ' + (rate < -0.01 ? 'bull' : rate > 0.03 ? 'bear' : 'watch');
+  document.getElementById('ov-hydra-b').textContent = sig;
+  document.getElementById('ov-funding').textContent = bf.pct || '--';
+  document.getElementById('ov-btc').textContent = p ? fp(p) : '--';
+  var thesis = 'BTC: ' + fp(p) + ' (' + (c >= 0 ? '+' : '') + c.toFixed(2) + '%). ';
+  thesis += 'Funding: ' + (bf.pct || '--') + ' [' + (bf.sig || '--') + ']. ';
+  thesis += rate < -0.01 ? 'Negative funding = longs paid = squeeze potential. Bias LONG.' :
+    rate > 0.03 ? 'Elevated funding = longs overextended. Tighten stops.' :
+    'Neutral derivatives environment. Follow price action.';
+  document.getElementById('hydra-thesis').textContent = thesis;
+  document.getElementById('ov-hydra-t').textContent = thesis.slice(0, 80) + '...';
+}
+
+// ── RENDER CIPHER ──
+function renderCipher() {
+  var html = '';
+  CIPHER_DATA.forEach(function(d, i) {
+    var t = LIVE.t[d.sym] || {};
+    var p = parseFloat(t.lastPrice || 0);
+    var c = parseFloat(t.price24hPcnt || 0) * 100;
+    var cls = c >= 0 ? 'up' : 'dn';
+    html += '<tr>' +
+      '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
+      '<td class="wl-sym">' + d.label + '</td>' +
+      '<td style="color:var(--green)">' + d.rev + '</td>' +
+      '<td>' + (p ? fp(p) : '--') + '</td>' +
+      '<td class="' + cls + '">' + (p ? (c >= 0 ? '+' : '') + c.toFixed(2) + '%' : '--') + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('cipher-body').innerHTML = html;
+}
+
+// ── RENDER WATCHLIST ──
+function renderWatchlist() {
+  var html = '';
+  WL.forEach(function(item) {
+    var t = LIVE.t[item.s] || {};
+    var p = parseFloat(t.lastPrice || 0);
+    var c = parseFloat(t.price24hPcnt || 0) * 100;
+    var f = LIVE.f[item.s];
+    var cls = c >= 0 ? 'up' : 'dn';
+    var sig = c > 5 ? 'HOT' : c < -5 ? 'WEAK' : c > 2 ? 'UP' : c < -2 ? 'DOWN' : '--';
+    var sigCol = c > 5 ? 'var(--green)' : c < -5 ? 'var(--red)' : c > 2 ? 'var(--green)' : c < -2 ? 'var(--red)' : 'var(--muted)';
+    html += '<tr>' +
+      '<td class="wl-sym">' + item.l + '</td>' +
+      '<td>' + (p ? fp(p) : '--') + '</td>' +
+      '<td class="' + cls + '">' + (p ? (c >= 0 ? '+' : '') + c.toFixed(2) + '%' : '--') + '</td>' +
+      '<td style="color:var(--muted)">' + (f ? f.pct : '--') + '</td>' +
+      '<td style="color:' + sigCol + '">' + sig + '</td>' +
+      '</tr>';
+  });
+  document.getElementById('wl-body').innerHTML = html;
+}
+
+// ── CLOCK ──
+function updateClock() {
+  document.getElementById('hdr-time').textContent = new Date().toUTCString().slice(17, 25) + ' UTC';
+}
+
+// ── CHAT ──
+var chatOpen = false;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chat-panel').className = chatOpen ? 'chat-panel open' : 'chat-panel';
+}
+
+function sendChat() {
+  var input = document.getElementById('chat-input');
+  var text = input.value.trim();
+  if (!text) { toggleChat(); return; }
+  input.value = '';
+  if (!chatOpen) toggleChat();
+  addMsg('You', text, true);
+  setTimeout(function() { addMsg('AGENTS', agentReply(text), false); }, 600);
+}
+
+function addMsg(name, text, isUser) {
+  var msgs = document.getElementById('chat-msgs');
+  var div = document.createElement('div');
+  div.className = isUser ? 'msg msg-user' : 'msg msg-agent';
+  var col = isUser ? 'var(--accent)' : 'var(--amber)';
+  div.innerHTML = '<div class="msg-name" style="color:' + col + '">' + name + '</div>' + text;
+  msgs.appendChild(div);
+  msgs.scrollTop = 99999;
+}
+
+function agentReply(text) {
+  var t = text.toLowerCase();
+  var bt = LIVE.t['BTCUSDT'] || {};
+  var bf = LIVE.f['BTCUSDT'] || {};
+  var fg = LIVE.fg[0];
+  var fgv = fg ? parseInt(fg.value) : '--';
+  if (t.includes('btc') || t.includes('bitcoin')) {
+    return 'HYDRA: BTC at ' + fp(bt.lastPrice) + '. Funding ' + (bf.pct || '--') + ' [' + (bf.sig || '--') + ']. ' + (parseFloat(bf.cur || 0) < -0.01 ? 'Negative funding = squeeze fuel. Bias long.' : 'Neutral derivatives.');
+  }
+  if (t.includes('tao') || t.includes('bittensor')) {
+    return 'CIPHER: TAO leads Q1 2026 at $43.2M revenue - 15x nearest competitor. 21M supply cap. Grayscale ETF S-1 filed. PHANTOM conviction 84%. Accumulate dips.';
+  }
+  if (t.includes('akt') || t.includes('akash')) {
+    return 'CIPHER: AKT $0.74M Q1 revenue. 85% cheaper than AWS. AI workloads +300% QoQ. PHANTOM: reload spot $0.595-0.610, stop $0.585, target $0.700 over 6-12 weeks.';
+  }
+  if (t.includes('fear') || t.includes('greed') || t.includes('fg')) {
+    return 'ORACLE: F&G at ' + fgv + '. ' + (fgv <= 25 ? 'Extreme Fear = historically best accumulation zone. Buy quality.' : fgv >= 75 ? 'Greed zone - take profits, trail stops.' : 'Neutral - follow price action.');
+  }
+  if (t.includes('nmr') || t.includes('numerai')) {
+    return 'CIPHER: NMR $0.4M Q1 revenue. AI hedge fund with deflationary mechanics. Classic lag trade - has not moved while sector is green. Entry $7.40-7.55 spot, stop $7.39, target $8.10.';
+  }
+  if (t.includes('siren')) {
+    return 'HYDRA: SIREN had massive volume spike +67% on the day. Check Howrie band - if RSI still above 50 and blue band pointing up, hold to TP. If band switches red - exit immediately.';
+  }
+  if (t.includes('scan') || t.includes('watchlist') || t.includes('best')) {
+    return 'COORDINATOR: Hit REFRESH to load live data. Current priorities: TAO (84% conviction), AKT GPU thesis (78%), NMR lag trade (71%). Check Howrie RSI crossing 50 for entry/exit signals.';
+  }
+  return 'COORDINATOR: BTC ' + fp(bt.lastPrice) + ', F&G ' + fgv + '. Ask about any token, pattern, or position. PHANTOM watching AKT, NMR, TAO, STRK.';
+}
+
+// ── MAIN REFRESH ──
+function refreshAll() {
+  var btn = document.getElementById('rbtn');
+  if (btn) { btn.textContent = 'LOADING...'; btn.disabled = true; }
+
+  Promise.resolve()
+    .then(function() { return fetchFG(); })
+    .then(function() { renderFG(); })
+    .then(function() { return fetchTickers(); })
+    .then(function() { renderTicker(); renderHydra(); renderCipher(); renderWatchlist(); })
+    .then(function() { return fetchFunding('BTCUSDT'); })
+    .then(function() { return fetchFunding('ETHUSDT'); })
+    .then(function() { return fetchFunding('TAOUSDT'); })
+    .then(function() { return fetchFunding('AKTUSDT'); })
+    .then(function() { renderHydra(); })
+    .catch(function(e) { console.warn('Refresh error:', e); })
+    .finally(function() {
+      if (btn) { btn.textContent = 'REFRESH'; btn.disabled = false; }
+    });
+}
+
+// ── INIT ──
+window.addEventListener('load', function() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  sv('overview', document.querySelector('.sb-item'));
+
+  var sendBtn = document.getElementById('chat-send');
+  if (sendBtn) {
+    sendBtn.onclick = sendChat;
+  }
+  var closeBtn = document.getElementById('chat-close');
+  if (closeBtn) {
+    closeBtn.onclick = toggleChat;
+  }
+  var chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { sendChat(); }
+    });
+    chatInput.addEventListener('focus', function() {
+      if (!chatOpen) { toggleChat(); }
+    });
+  }
+
+  setTimeout(refreshAll, 300);
+  setInterval(function() {
+    fetchTickers().then(function() { renderTicker(); renderHydra(); renderWatchlist(); });
+  }, 30000);
+  setInterval(function() {
+    fetchFG().then(function() { renderFG(); });
+  }, 600000);
+});
+</script>
+</body>
+</html>
