@@ -280,14 +280,64 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
 
     <!-- ORACLE -->
     <div class="view" id="view-oracle">
+
+      <!-- Macro Stats -->
       <div class="panel">
-        <div class="panel-title">ORACLE - Macro Intelligence</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
-          <div class="ov-stat"><div class="ov-val" id="or-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR AND GREED</div></div>
-          <div class="ov-stat"><div class="ov-val" id="or-cls" style="color:var(--muted)">--</div><div class="ov-lbl">CLASSIFICATION</div></div>
+        <div class="panel-title">🌐 ORACLE — Macro Intelligence</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <div class="ov-stat"><div class="ov-val" id="or-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR & GREED</div></div>
+          <div class="ov-stat"><div class="ov-val" id="or-cls" style="color:var(--muted);font-size:13px">--</div><div class="ov-lbl">CLASSIFICATION</div></div>
+          <div class="ov-stat"><div class="ov-val" id="or-btc-dom" style="color:var(--accent)">~54%</div><div class="ov-lbl">BTC DOMINANCE</div></div>
         </div>
-        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.8;" id="oracle-thesis">
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.8;" id="oracle-thesis">
           Hit REFRESH to load macro data.
+        </div>
+      </div>
+
+      <!-- Bloomberg Intel Panel -->
+      <div class="panel">
+        <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📰 MACRO NEWS FEED</span>
+          <div style="display:flex;gap:8px;">
+            <button onclick="fetchMacroNews()" id="macro-btn" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.05em;">FETCH MACRO</button>
+            <button onclick="clearMacroNews()" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;">CLEAR</button>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
+          Pulls live headlines from CoinDesk, CryptoNews, and public RSS feeds. Paste Bloomberg email content below for ORACLE analysis.
+        </div>
+        <div id="macro-status" style="font-size:11px;color:var(--muted);padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:8px;display:none;"></div>
+        <div id="macro-headlines"></div>
+
+        <!-- Bloomberg paste zone -->
+        <div style="margin-top:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.08em;margin-bottom:6px;">📧 PASTE BLOOMBERG EMAIL → ORACLE ANALYSIS</div>
+          <textarea id="bloomberg-paste" placeholder="Paste Bloomberg newsletter content here... ORACLE will extract the macro signals relevant to crypto." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:10px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:'Segoe UI',sans-serif;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <button onclick="analyseBloomberg()" style="margin-top:6px;background:var(--amber);color:#000;border:none;border-radius:6px;padding:6px 16px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em;">ANALYSE WITH ORACLE</button>
+        </div>
+        <div id="bloomberg-analysis" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Key Macro Rules -->
+      <div class="panel">
+        <div class="panel-title">📐 ORACLE Rules</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--muted);line-height:1.7;">
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;">
+            <div style="color:var(--green);font-weight:700;margin-bottom:4px;">BULLISH MACRO</div>
+            DXY falling = crypto bid<br>F&G ≤ 25 = accumulate<br>BTC exchange outflows = whales buying<br>Rate cut expectations rising
+          </div>
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;">
+            <div style="color:var(--red);font-weight:700;margin-bottom:4px;">BEARISH MACRO</div>
+            DXY rising = headwind<br>F&G ≥ 75 = take profits<br>Rate hike bets = sell risk<br>Geopolitical escalation = oil spike
+          </div>
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;">
+            <div style="color:var(--amber);font-weight:700;margin-bottom:4px;">CURRENT MACRO (Bloomberg)</div>
+            US-Israel-Iran war ongoing<br>Rate HIKE bets 50% by Oct 2026<br>Bond traders pricing NO cuts<br>Oil spike risk = inflation fear
+          </div>
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;">
+            <div style="color:var(--accent);font-weight:700;margin-bottom:4px;">CRYPTO IMPLICATION</div>
+            War + rate hike fears = headwind<br>But F&G low = accumulation zone<br>Quality AI tokens hold bid<br>Avoid leverage during macro events
+          </div>
         </div>
       </div>
     </div>
@@ -474,6 +524,174 @@ function fetchFG() {
     }).catch(function() {});
 }
 
+// ── ORACLE MACRO NEWS ──
+var MACRO_FEEDS = [
+  { name: 'CoinDesk',    url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', type: 'rss' },
+  { name: 'CryptoNews',  url: 'https://cryptonews.com/news/feed/', type: 'rss' },
+  { name: 'Decrypt',     url: 'https://decrypt.co/feed', type: 'rss' }
+];
+
+function fetchMacroNews() {
+  var btn = document.getElementById('macro-btn');
+  var status = document.getElementById('macro-status');
+  var headlines = document.getElementById('macro-headlines');
+  btn.textContent = 'FETCHING...';
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.style.color = 'var(--accent)';
+  status.textContent = 'Pulling macro headlines from crypto news feeds...';
+  headlines.innerHTML = '';
+
+  var allItems = [];
+  var done = 0;
+
+  MACRO_FEEDS.forEach(function(feed) {
+    var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feed.url);
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, 8000);
+    fetch(proxyUrl, { signal: ctrl.signal })
+      .then(function(r) { clearTimeout(timer); return r.text(); })
+      .then(function(text) {
+        var parser = new DOMParser();
+        var xml = parser.parseFromString(text, 'text/xml');
+        var items = xml.querySelectorAll('item');
+        items.forEach(function(item, i) {
+          if (i >= 5) return; // max 5 per feed
+          var title = item.querySelector('title') ? item.querySelector('title').textContent.trim() : '';
+          var link = item.querySelector('link') ? item.querySelector('link').textContent.trim() : '';
+          var pubDate = item.querySelector('pubDate') ? item.querySelector('pubDate').textContent.trim() : '';
+          var desc = item.querySelector('description') ? item.querySelector('description').textContent.replace(/<[^>]+>/g, '').trim().slice(0, 120) : '';
+          if (title) allItems.push({ source: feed.name, title: title, link: link, pubDate: pubDate, desc: desc });
+        });
+      })
+      .catch(function() {})
+      .finally(function() {
+        done++;
+        if (done === MACRO_FEEDS.length) { renderMacroNews(allItems, btn, status); }
+      });
+  });
+}
+
+// Macro keywords ORACLE watches for
+var MACRO_BULL = ['rate cut','fed pivot','inflation falls','dollar weakens','dxy down','risk-on','btc etf','inflows','accumulation','bullish'];
+var MACRO_BEAR = ['rate hike','inflation','war','geopolit','dollar rises','dxy','risk-off','sell-off','crash','fed hike','outflows','bearish','recession','oil spike'];
+
+function scoreMacroHeadline(title) {
+  var t = title.toLowerCase();
+  var bullHits = MACRO_BULL.filter(function(k) { return t.includes(k); }).length;
+  var bearHits = MACRO_BEAR.filter(function(k) { return t.includes(k); }).length;
+  if (bearHits > bullHits) return { label: 'BEARISH', col: 'var(--red)', bg: 'rgba(255,69,96,.1)' };
+  if (bullHits > bearHits) return { label: 'BULLISH', col: 'var(--green)', bg: 'rgba(0,232,122,.1)' };
+  return { label: 'NEUTRAL', col: 'var(--muted)', bg: 'rgba(255,255,255,.04)' };
+}
+
+function renderMacroNews(items, btn, status) {
+  btn.textContent = 'FETCH MACRO';
+  btn.disabled = false;
+  var headlines = document.getElementById('macro-headlines');
+
+  if (items.length === 0) {
+    status.style.color = 'var(--muted)';
+    status.textContent = 'No headlines loaded — CORS proxy may be slow. Try again in a moment.';
+    return;
+  }
+
+  var bullCount = 0, bearCount = 0;
+  items.forEach(function(item) {
+    var s = scoreMacroHeadline(item.title);
+    if (s.label === 'BULLISH') bullCount++;
+    if (s.label === 'BEARISH') bearCount++;
+  });
+
+  var bias = bearCount > bullCount ? '🔴 BEARISH LEAN' : bullCount > bearCount ? '🟢 BULLISH LEAN' : '🟡 NEUTRAL';
+  status.style.color = bearCount > bullCount ? 'var(--red)' : bullCount > bearCount ? 'var(--green)' : 'var(--amber)';
+  status.textContent = items.length + ' headlines loaded · ORACLE bias: ' + bias + ' (' + bullCount + ' bull / ' + bearCount + ' bear) · ' + new Date().toUTCString().slice(17,25) + ' UTC';
+
+  var html = '';
+  items.forEach(function(item) {
+    var s = scoreMacroHeadline(item.title);
+    html += '<div style="background:' + s.bg + ';border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;margin-bottom:6px;">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
+    html += '<div>';
+    html += '<div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:3px;letter-spacing:.06em;">' + item.source.toUpperCase() + '</div>';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:4px;">' + item.title + '</div>';
+    if (item.desc) html += '<div style="font-size:10px;color:var(--muted);line-height:1.5;">' + item.desc + '...</div>';
+    html += '</div>';
+    html += '<span style="flex-shrink:0;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:' + s.bg + ';color:' + s.col + ';border:1px solid ' + s.col + '">' + s.label + '</span>';
+    html += '</div>';
+    if (item.link) html += '<a href="' + item.link + '" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;margin-top:4px;display:inline-block;">Read →</a>';
+    html += '</div>';
+  });
+  headlines.innerHTML = html;
+
+  // Update Oracle badge
+  document.getElementById('oracle-badge').textContent = bearCount > bullCount ? 'BEAR MACRO' : bullCount > bearCount ? 'BULL MACRO' : 'NEUTRAL';
+  document.getElementById('oracle-badge').className = 'sb-badge ' + (bearCount > bullCount ? 'bear' : bullCount > bearCount ? 'bull' : 'watch');
+}
+
+function clearMacroNews() {
+  document.getElementById('macro-headlines').innerHTML = '';
+  document.getElementById('macro-status').style.display = 'none';
+  document.getElementById('bloomberg-analysis').innerHTML = '';
+  document.getElementById('bloomberg-paste').value = '';
+}
+
+// Bloomberg email paste analyser
+function analyseBloomberg() {
+  var paste = document.getElementById('bloomberg-paste').value.trim();
+  var out = document.getElementById('bloomberg-analysis');
+  if (!paste) { out.innerHTML = '<div style="font-size:11px;color:var(--red)">Paste Bloomberg content first.</div>'; return; }
+
+  // Extract key signals from pasted text
+  var text = paste.toLowerCase();
+  var signals = [];
+
+  // Rate signals
+  if (text.includes('rate hike') || text.includes('hike') || (text.includes('rate') && text.includes('increase'))) signals.push({ icon:'🔴', label:'RATE HIKE RISK', detail:'Bond market pricing rate increases — headwind for risk assets. Tighten stops on leveraged positions.', col:'var(--red)' });
+  if (text.includes('rate cut') || text.includes('pivot') || text.includes('easing')) signals.push({ icon:'🟢', label:'RATE CUT SIGNAL', detail:'Fed easing expected — bullish for crypto and risk assets.', col:'var(--green)' });
+
+  // War / geopolitical
+  if (text.includes('war') || text.includes('iran') || text.includes('conflict') || text.includes('military')) signals.push({ icon:'🔴', label:'GEOPOLITICAL RISK', detail:'Active conflict = risk-off sentiment. Oil spike = inflation = rate pressure. Reduce leverage.', col:'var(--red)' });
+
+  // Inflation
+  if (text.includes('inflation') || text.includes('inflationary') || text.includes('cpi')) signals.push({ icon:'🔴', label:'INFLATION PRESSURE', detail:'Rising inflation = Fed tightening bias = DXY strength = crypto headwind.', col:'var(--red)' });
+
+  // Oil
+  if (text.includes('oil') && (text.includes('spike') || text.includes('surg') || text.includes('ris'))) signals.push({ icon:'🔴', label:'OIL PRICE SPIKE', detail:'Energy crisis = inflation spike = rate hike risk. Watch for risk-off cascade.', col:'var(--red)' });
+
+  // Dollar / DXY
+  if (text.includes('dollar') && (text.includes('strong') || text.includes('rises') || text.includes('rally'))) signals.push({ icon:'🔴', label:'DXY STRENGTHENING', detail:'Strong dollar = crypto headwind. Wait for DXY reversal before adding long exposure.', col:'var(--red)' });
+  if (text.includes('dollar') && (text.includes('weak') || text.includes('falls') || text.includes('declin'))) signals.push({ icon:'🟢', label:'DXY WEAKENING', detail:'Weak dollar = risk-on. Bullish for crypto. Increase long exposure on pullbacks.', col:'var(--green)' });
+
+  // Debt / fiscal
+  if (text.includes('debt') || text.includes('deficit') || text.includes('trillion')) signals.push({ icon:'🟡', label:'FISCAL CONCERN', detail:'Rising debt + spending = long-term dollar debasement. Bitcoin long-term bullish thesis intact.', col:'var(--amber)' });
+
+  // Goldman / institutional
+  if (text.includes('goldman') || text.includes('deal') || text.includes('ipo') || text.includes('m&a')) signals.push({ icon:'🟢', label:'INSTITUTIONAL ACTIVITY', detail:'Deals + Wall St activity = risk appetite returning. Positive for crypto bull cycle.', col:'var(--green)' });
+
+  // China
+  if (text.includes('china') || text.includes('silver') || text.includes('solar')) signals.push({ icon:'🟡', label:'CHINA MACRO', detail:'China demand signals — silver/solar activity relevant to broader commodity + EM sentiment.', col:'var(--amber)' });
+
+  if (signals.length === 0) signals.push({ icon:'🟡', label:'NO STRONG SIGNALS DETECTED', detail:'No clear bullish or bearish macro triggers found. Paste more content or check manually.', col:'var(--muted)' });
+
+  var bearSigs = signals.filter(function(s) { return s.col === 'var(--red)'; }).length;
+  var bullSigs = signals.filter(function(s) { return s.col === 'var(--green)'; }).length;
+  var overallBias = bearSigs > bullSigs ? '🔴 NET BEARISH MACRO — reduce leverage, tighten stops' : bullSigs > bearSigs ? '🟢 NET BULLISH MACRO — risk-on, add on pullbacks' : '🟡 MIXED SIGNALS — trade defensively, spot preferred over perps';
+  var biasCol = bearSigs > bullSigs ? 'var(--red)' : bullSigs > bearSigs ? 'var(--green)' : 'var(--amber)';
+
+  var html = '<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;">';
+  html += '<div style="font-size:11px;font-weight:700;color:' + biasCol + ';margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">ORACLE VERDICT: ' + overallBias + '</div>';
+  signals.forEach(function(s) {
+    html += '<div style="margin-bottom:8px;padding:8px;background:var(--surface);border-radius:6px;border-left:3px solid ' + s.col + '">';
+    html += '<div style="font-size:10px;font-weight:700;color:' + s.col + ';margin-bottom:3px;">' + s.icon + ' ' + s.label + '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);line-height:1.5;">' + s.detail + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  out.innerHTML = html;
+  document.getElementById('bloomberg-paste').value = '';
+}
+
 // ── RENDER TICKER ──
 function renderTicker() {
   var syms = ['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','RENDERUSDT','AKTUSDT','HYPEUSDT','XRPUSDT','DOGEUSDT'];
@@ -631,28 +849,76 @@ function agentReply(text) {
   var bf = LIVE.f['BTCUSDT'] || {};
   var fg = LIVE.fg[0];
   var fgv = fg ? parseInt(fg.value) : '--';
+
+  // ORACLE — macro / bloomberg / news
+  if (t.includes('macro') || t.includes('bloomberg') || t.includes('headline') || t.includes('news')) {
+    return 'ORACLE: Go to ORACLE tab → hit FETCH MACRO for live headlines (CoinDesk, Decrypt, CryptoNews) scored BULL/BEAR/NEUTRAL. Paste your Bloomberg email into the paste box → hit ANALYSE for signal extraction. Current macro: US-Iran war + rate hike bets (50% by Oct) = headwind. Trade spot over perps in this environment.';
+  }
+  if (t.includes('iran') || t.includes('war') || (t.includes('rate') && (t.includes('hike') || t.includes('cut'))) || t.includes('fed ') || t.includes('interest rate')) {
+    return 'ORACLE: Bloomberg (Mar 20) — US-Israel-Iran war ongoing. Bond traders pricing 50% rate HIKE by Oct 2026. NO cuts expected this year. Oil spike risk. $39T US debt. VERDICT: Bearish macro backdrop. Hold spot conviction plays (TAO, AKT). Reduce perp leverage. Do NOT add size during geopolitical escalation.';
+  }
+  if (t.includes('dxy') || t.includes('dollar') || t.includes('macro')) {
+    return 'ORACLE: DXY rising = headwind for crypto. War + inflation = dollar strength pressure. Watch for DXY reversal as entry signal for adding long exposure. Until then: spot only, tight stops on perps.';
+  }
+
+  // PHANTOM — triangle / pattern
+  if (t.includes('triangle') || t.includes('pattern') || t.includes('breakout') || t.includes('phantom')) {
+    var tri = LIVE.tri && LIVE.tri.length > 0;
+    if (tri) {
+      var top = LIVE.tri[0];
+      return 'PHANTOM: Last scan found ' + LIVE.tri.length + ' pattern(s). Top: ' + top.sym + ' score ' + top.score + ' — ' + (top.breakout ? 'BREAKING OUT.' : top.nearBreakout ? top.distToRes + '% from resistance.' : 'forming.') + ' Go to PHANTOM tab for full detail.';
+    }
+    return 'PHANTOM: Go to PHANTOM tab and hit SCAN NOW — live 15m candle scan across all triangle watch symbols. Criteria: flat resistance 3+ touches ±0.4%, rising lows, vol spike ≥1.4×.';
+  }
+  if (t.includes('bear flag') || (t.includes('near') && t.includes('lesson'))) {
+    return 'PHANTOM: The NEAR lesson — ascending triangle FROM a strong downtrend = bear flag. Check what came before. Sharp drop = bear flag. Gradual base = real triangle. Always check 1H before entering 15m pattern.';
+  }
+
+  // HYDRA
   if (t.includes('btc') || t.includes('bitcoin')) {
-    return 'HYDRA: BTC at ' + fp(bt.lastPrice) + '. Funding ' + (bf.pct || '--') + ' [' + (bf.sig || '--') + ']. ' + (parseFloat(bf.cur || 0) < -0.01 ? 'Negative funding = squeeze fuel. Bias long.' : 'Neutral derivatives.');
+    return 'HYDRA: BTC ' + fp(bt.lastPrice) + '. Funding ' + (bf.pct || '--') + ' [' + (bf.sig || '--') + ']. ' + (parseFloat(bf.cur || 0) < -0.01 ? 'Negative funding = longs paid = squeeze fuel. Bias LONG.' : 'Neutral derivatives.');
   }
+  if (t.includes('funding')) {
+    var rate = parseFloat(bf.cur || 0);
+    return 'HYDRA: BTC Funding ' + (bf.pct || '--') + '. ' + (rate < -0.01 ? 'NEGATIVE — longs being PAID. Hold and collect.' : rate > 0.03 ? 'HIGH — longs overextended. Tighten stops.' : 'Neutral. No edge from derivatives right now.');
+  }
+  if (t.includes('liquidation') || t.includes('liq') || t.includes('heatmap')) {
+    return 'HYDRA: CoinGlass liq heatmap — yellow/bright = massive clusters. Below price = floor. Above = magnet. Price flushes TO cluster then recovers = whale stop hunt. Check Howrie: blue band during flush = stop hunt (buy). Red band = real breakdown (exit).';
+  }
+
+  // CIPHER
   if (t.includes('tao') || t.includes('bittensor')) {
-    return 'CIPHER: TAO leads Q1 2026 at $43.2M revenue - 15x nearest competitor. 21M supply cap. Grayscale ETF S-1 filed. PHANTOM conviction 84%. Accumulate dips.';
+    return 'CIPHER: TAO #1 Q1 2026 — $43.2M revenue, 15x nearest rival. LunarCrush: mentions at ALL-TIME HIGH today. Sentiment 73%. Grayscale ETF S-1 filed. 84% PHANTOM conviction. Accumulate dips, do not chase.';
   }
-  if (t.includes('akt') || t.includes('akash')) {
-    return 'CIPHER: AKT $0.74M Q1 revenue. 85% cheaper than AWS. AI workloads +300% QoQ. PHANTOM: reload spot $0.595-0.610, stop $0.585, target $0.700 over 6-12 weeks.';
+  if (t.includes('akt') || t.includes('akash')) { return 'CIPHER: AKT $0.74M Q1 rev. 85% cheaper than AWS. AI workloads +300% QoQ. Spot $0.595-0.610, stop $0.585, target $0.700, 6-12 weeks. No leverage on thesis plays.'; }
+  if (t.includes('nmr') || t.includes('numerai')) { return 'CIPHER: NMR lag trade — flat while AI sector green. Entry $7.40-7.55 spot, stop $7.39, target $8.10. 71% conviction.'; }
+  if (t.includes('arc')) { return 'CIPHER: ARC agents early. 68% conviction. Watch $0.048-0.050. Small position only.'; }
+  if (t.includes('render') || t.includes('rndr')) { return 'CIPHER: RENDER $1.2M Q1 rev. Apple pipeline. Re-entry only when Howrie back to blue band — you exited perfectly last session at zero.'; }
+  if (t.includes('virtual')) { return 'CIPHER: VIRTUAL $2.87M Q1 rev. 200+ AI agents on Base. #2 AI revenue. Watch for Howrie entry.'; }
+  if (t.includes('icp') || t.includes('internet computer')) { return 'CIPHER: ICP $0.3M Q1 rev. Mission 70 governance vote = uncertainty = selling pressure. Your short thesis supported by social data — mentions down, vol below average. Trail your stop.'; }
+
+  // ORACLE
+  if (t.includes('fear') || t.includes('greed') || t.includes('f&g') || t.includes('fg')) {
+    return 'ORACLE: F&G at ' + fgv + '. ' + (fgv <= 25 ? 'EXTREME FEAR = accumulate quality.' : fgv >= 75 ? 'GREED = take profits, reduce size.' : fgv <= 45 ? 'FEAR = smart money building. Follow price.' : 'Neutral. Let Howrie lead.');
   }
-  if (t.includes('fear') || t.includes('greed') || t.includes('fg')) {
-    return 'ORACLE: F&G at ' + fgv + '. ' + (fgv <= 25 ? 'Extreme Fear = historically best accumulation zone. Buy quality.' : fgv >= 75 ? 'Greed zone - take profits, trail stops.' : 'Neutral - follow price action.');
-  }
-  if (t.includes('nmr') || t.includes('numerai')) {
-    return 'CIPHER: NMR $0.4M Q1 revenue. AI hedge fund with deflationary mechanics. Classic lag trade - has not moved while sector is green. Entry $7.40-7.55 spot, stop $7.39, target $8.10.';
-  }
-  if (t.includes('siren')) {
-    return 'HYDRA: SIREN had massive volume spike +67% on the day. Check Howrie band - if RSI still above 50 and blue band pointing up, hold to TP. If band switches red - exit immediately.';
-  }
-  if (t.includes('scan') || t.includes('watchlist') || t.includes('best')) {
-    return 'COORDINATOR: Hit REFRESH to load live data. Current priorities: TAO (84% conviction), AKT GPU thesis (78%), NMR lag trade (71%). Check Howrie RSI crossing 50 for entry/exit signals.';
-  }
-  return 'COORDINATOR: BTC ' + fp(bt.lastPrice) + ', F&G ' + fgv + '. Ask about any token, pattern, or position. PHANTOM watching AKT, NMR, TAO, STRK.';
+
+  // NEXUS
+  if (t.includes('sector') || t.includes('rotation') || t.includes('nexus')) { return 'NEXUS: GPU Compute (AKT+RNDR+IO) leading. AI Intelligence (TAO+FET+NEAR) strong. Check which cluster is leading today — money rotates from BTC → ETH → L1s → AI sectors → small caps.'; }
+
+  // Howrie
+  if (t.includes('howrie') || t.includes('band') || t.includes('rsi')) { return 'COORDINATOR: Howrie — Blue band + RSI>50 = HOLD. Red band = EXIT NOW. Green triangle = RSI>80 + volume cross = momentum (not warning). Multiple red triangles oversold = capitulation = buy. Band resets every RSI 50 cross.'; }
+
+  // Open positions
+  if (t.includes('siren')) { return 'HYDRA: SIREN — check Howrie. Blue band up = hold, collect negative funding. Red band = exit immediately. Funding payment only worth holding if band stays blue.'; }
+  if (t.includes('pippin')) { return 'HYDRA: PIPPIN 108% ROI last check. Whale stop hunt confirmed by liq heatmap. Hold while blue band intact. At 50% daily target: take 50%, trail rest.'; }
+
+  // Rules
+  if (t.includes('rule') || t.includes('stop') || t.includes('exit') || t.includes('loss')) { return 'COORDINATOR: (1) Never let winner become loser. (2) Red band = exit immediately. (3) Never average down. (4) 50% daily target = protect it. (5) Stop-to-liq ≥1% at 20x. (6) Max 80% margin. (7) Spot for thesis, perps for short-term.'; }
+
+  // Scan
+  if (t.includes('scan') || t.includes('watchlist') || t.includes('best') || t.includes('top')) { return 'COORDINATOR: REFRESH for live prices. Priorities: TAO 84%, AKT 78%, NMR 71%. PHANTOM tab → SCAN NOW for live triangle detection. ORACLE tab → FETCH MACRO for news sentiment.'; }
+
+  return 'COORDINATOR: BTC ' + fp(bt.lastPrice) + ' | F&G ' + fgv + '. Ask about: any token, patterns, positions (SIREN/PIPPIN), macro/bloomberg, funding, sectors, rules. All 5 agents live.';
 }
 
 // ── MAIN REFRESH ──
