@@ -1291,8 +1291,11 @@ function renderWatchlist() {
   if(wb) wb.innerHTML = html || '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px;">No results</td></tr>';
 }
 
-// ── CHAT (FIXED) ──
-var chatOpen=false;
+// ── CHAT STATE ──
+var chatHistory = [];
+var chatOpen = false;
+var chatTyping = false;
+
 function toggleChat(){
   chatOpen=!chatOpen;
   var panel=document.getElementById('chat-panel');
@@ -1307,55 +1310,164 @@ function toggleChat(){
     },50);
   }
 }
+
+function getLiveContext() {
+  var bt=LIVE.t['BTCUSDT']||{};
+  var et=LIVE.t['ETHUSDT']||{};
+  var fg=LIVE.fg[0];
+  var bf=LIVE.f['BTCUSDT']||{};
+
+  // Build top movers snapshot
+  var allSyms=Object.keys(LIVE.t);
+  var movers=allSyms.map(function(s){
+    var t=LIVE.t[s];
+    return {s:s.replace('USDT',''),c:parseFloat(t.price24hPcnt||0)*100,p:parseFloat(t.lastPrice||0)};
+  }).filter(function(x){return x.p>0;});
+  movers.sort(function(a,b){return b.c-a.c;});
+  var top5=movers.slice(0,5).map(function(x){return x.s+' '+( x.c>=0?'+':'')+x.c.toFixed(1)+'%';}).join(', ');
+  var bot5=movers.slice(-5).map(function(x){return x.s+' '+x.c.toFixed(1)+'%';}).join(', ');
+
+  // Key tokens
+  var keyTokens=['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','AKTUSDT','RENDERUSDT','RIVERUSDT','NEARUSDT','ARCUSDT','NMRUSDT','IOUSDT','FETUSDT','VIRTUALUSDT','HYPEUSDT'];
+  var tokenSnap=keyTokens.map(function(s){
+    var t=LIVE.t[s]||{}; var p=parseFloat(t.lastPrice||0); var c=parseFloat(t.price24hPcnt||0)*100;
+    var f=LIVE.f[s];
+    return s.replace('USDT','')+'=$'+(p?p.toFixed(p<1?4:2):'?')+' ('+(c>=0?'+':'')+c.toFixed(1)+'%)'+(f?' fund:'+f.pct:'');
+  }).join(' | ');
+
+  return 'LIVE MARKET DATA ('+new Date().toUTCString().slice(17,22)+' UTC):\n'+
+    'BTC: '+fp(bt.lastPrice)+' ('+( parseFloat(bt.price24hPcnt||0)*100).toFixed(2)+'%) | '+
+    'ETH: '+fp(et.lastPrice)+' | '+
+    'F&G: '+(fg?fg.value+' ('+fg.value_classification+')':'unknown')+' | '+
+    'BTC Funding: '+(bf.pct||'unknown')+' ['+( bf.sig||'?')+']\n'+
+    'KEY TOKENS: '+tokenSnap+'\n'+
+    'TOP GAINERS: '+top5+'\n'+
+    'TOP LOSERS: '+bot5+'\n'+
+    (LIVE.tri&&LIVE.tri.length?'PHANTOM SCAN: '+LIVE.tri.map(function(r){return r.sym+' score:'+r.score+(r.breakout?' BREAKING':r.nearBreakout?' NEAR':'');}).join(', '):'PHANTOM SCAN: not run yet');
+}
+
+function buildSystemPrompt() {
+  return `You are the QUANT-OPS multi-agent trading system for a crypto trader named Howrie. Howrie built the "Howrie Forecaster" indicator in PineScript — a custom band + RSI system where:
+- BLUE band + RSI > 50 = hold longs / valid entry signal
+- RED band = EXIT IMMEDIATELY, no exceptions
+- Green triangles = RSI > 80 + volume cross = momentum confirmation (NOT overbought warning)
+- Multiple red triangles = capitulation = potential buy zone
+- Band resets on every RSI 50 cross = master signal
+
+You are 5 specialist agents that respond together. Prefix responses with the relevant agent name(s):
+- COORDINATOR (🧠): Meta-layer. GCR Classic. Contrarian. Anti-herd. Data-driven.
+- HYDRA (📊): Futures quant. Sharpe ratio > win rate. Funding, OI, liquidations, position sizing.
+- CIPHER (🤖): AI sector intel. Narrative precedes price. Founder activity, on-chain, sub-clusters.
+- ORACLE (🌐): Macro + on-chain. DXY, F&G, whale flows, Bloomberg signals, geopolitical risk.
+- NEXUS (⛓): Risk & sector rotation. Kill-switch enforcer. Lag trade detector.
+- PHANTOM (🎯): Pattern + narrative conviction. Triangle scanner. GCR contrarian filter.
+
+CROSS-POLLINATION RULES (always apply):
+- CIPHER whale intel → PHANTOM conviction upgrade
+- ORACLE macro → HYDRA position sizing
+- NEXUS rotation signal → CIPHER entry timing
+- PHANTOM breakout → HYDRA checks funding/OI confluence
+- HYDRA funding squeeze → NEXUS checks sector cascade risk
+
+CORE TRADING RULES (never contradict these):
+1. Red band = exit immediately
+2. Never add to a losing position (the ARC lesson)
+3. Never let a winner become a loser
+4. 50% daily target = protect it
+5. Stop-to-liq gap ≥1% at 20x leverage
+6. Max 80% margin deployed (NEXUS kill-switch)
+7. Spot for thesis plays, perps for short-term momentum only
+8. Rule 9: Blue band on a FRESH candle = new trade. Not a reason to average down on an existing loser.
+
+CURRENT MACRO CONTEXT:
+- US-Iran war ongoing (bearish macro)
+- 50% probability of Fed rate HIKE by Oct 2026, no cuts expected
+- F&G at ~14 (Extreme Fear) = GCR accumulation signal for quality
+- BTC dominance ~56.5%
+
+AI SECTOR CONVICTION CALLS:
+- TAO: 84% conviction. $43.2M Q1 revenue, Jensen Huang endorsed, Grayscale ETF filing, subnet capacity doubling. RSI overbought — wait for pullback.
+- AKT: 78%. GPU compute, 85% cheaper than AWS, AI workloads +300% QoQ.
+- NMR: 71% lag trade. AI hedge fund, deflationary, flat while sector green. Low volume risk.
+- ARC: 68% early. Agents narrative building. Small positions only.
+
+RESPONSE STYLE:
+- Be direct, specific, data-driven. No fluff.
+- Always reference live prices when available.
+- Always end position analysis with: "What is your Howrie showing?" if the user is considering a trade.
+- Keep responses concise — this is a trading terminal, not an essay.
+- Use the agent prefix format: "HYDRA: [content]" or "COORDINATOR + PHANTOM: [content]"
+- When multiple agents are relevant, chain their views naturally.`;
+}
+
 function sendChat(){
-  var input=document.getElementById('chat-input'); var text=input.value.trim();
-  if(!text) return;
+  var input=document.getElementById('chat-input');
+  var text=input.value.trim();
+  if(!text || chatTyping) return;
   input.value='';
   if(!chatOpen) toggleChat();
-  addMsg('You',text,true);
-  setTimeout(function(){addMsg('AGENTS',agentReply(text),false);},500);
+  addMsg('You', text, true);
+  chatHistory.push({role:'user', content: text});
+  sendToAPI();
 }
-function addMsg(name,text,isUser){
+
+function sendToAPI() {
+  chatTyping = true;
+  var sendBtn = document.getElementById('chat-send');
+  if(sendBtn){sendBtn.textContent='...';sendBtn.disabled=true;}
+
+  // Add typing indicator
   var msgs=document.getElementById('chat-msgs');
-  var div=document.createElement('div'); div.className=isUser?'msg msg-user':'msg msg-agent';
+  var typingDiv=document.createElement('div');
+  typingDiv.className='msg msg-agent'; typingDiv.id='typing-indicator';
+  typingDiv.innerHTML='<div class="msg-name" style="color:var(--amber)">AGENTS</div><span style="color:var(--muted)">⚡ thinking...</span>';
+  msgs.appendChild(typingDiv); msgs.scrollTop=99999;
+
+  // Build messages with live context injected into latest user message
+  var liveCtx = getLiveContext();
+  var messages = chatHistory.slice(0, -1).concat([{
+    role: 'user',
+    content: chatHistory[chatHistory.length-1].content + '\n\n[' + liveCtx + ']'
+  }]);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: buildSystemPrompt(),
+      messages: messages
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var typing=document.getElementById('typing-indicator');
+    if(typing) typing.remove();
+    var reply = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : 'Error — no response from agents.';
+    chatHistory.push({role:'assistant', content: reply});
+    addMsg('AGENTS', reply.replace(/\n/g,'<br>'), false);
+  })
+  .catch(function(err){
+    var typing=document.getElementById('typing-indicator');
+    if(typing) typing.remove();
+    addMsg('COORDINATOR', 'API error — check connection. '+err.message, false);
+  })
+  .finally(function(){
+    chatTyping=false;
+    var sendBtn=document.getElementById('chat-send');
+    if(sendBtn){sendBtn.textContent='SEND ↑';sendBtn.disabled=false;}
+  });
+}
+
+function addMsg(name, text, isUser){
+  var msgs=document.getElementById('chat-msgs');
+  var div=document.createElement('div');
+  div.className=isUser?'msg msg-user':'msg msg-agent';
   var col=isUser?'var(--accent)':'var(--amber)';
   div.innerHTML='<div class="msg-name" style="color:'+col+'">'+name+'</div>'+text;
-  msgs.appendChild(div); msgs.scrollTop=99999;
-}
-
-function agentReply(text) {
-  var t=text.toLowerCase();
-  var bt=LIVE.t['BTCUSDT']||{}; var bf=LIVE.f['BTCUSDT']||{};
-  var fg=LIVE.fg[0]; var fgv=fg?parseInt(fg.value):'--';
-
-  // Cross-pollination hints
-  function xpoll(msg){return '<br><span style="font-size:9px;color:var(--purple);opacity:.7">⚡ Cross-poll: '+msg+'</span>';}
-
-  if(t.includes('macro')||t.includes('bloomberg')||t.includes('news')) return 'ORACLE: ORACLE tab → FETCH MACRO for AI-scored headlines. Paste Bloomberg → ANALYSE. Current: US-Iran war + 50% rate hike bets = bearish backdrop. Trade spot over perps. NEXUS: Sector rotation shows AI still leading despite macro headwinds.'+xpoll('ORACLE macro → HYDRA sizing (reduce leverage in headwinds)');
-  if(t.includes('iran')||t.includes('war')) return 'ORACLE: Bloomberg Mar 20 — US-Israel-Iran war ongoing. 50% rate HIKE by Oct 2026. No cuts expected. Oil spike risk. $39T debt. VERDICT: Bearish macro. Hold spot conviction plays (TAO, AKT). Reduce perp leverage to minimum.'+xpoll('ORACLE bearish macro → HYDRA: reduce position sizing');
-  if(t.includes('fear')||t.includes('greed')||t.includes('f&g')) return 'ORACLE: F&G at '+fgv+'. '+(fgv<=25?'EXTREME FEAR = accumulate quality. GCR: this is when you buy, not panic.':fgv>=75?'GREED = take profits, reduce size, stop chasing.':fgv<=45?'FEAR = smart money building. Contrarian long signal.':'Neutral. Let Howrie lead entry.');
-  if(t.includes('altrank')||t.includes('lunar')||t.includes('social')||t.includes('momentum')) return 'CIPHER: Hit SCAN SOCIAL on Overview for LunarCrush AltRank leaders. Session data: SIREN #1, TAO #10, SOL #20, LINK #15. Hit SOCIAL SCAN on CIPHER tab for live Whatsup intelligence.'+xpoll('CIPHER whale/founder intel → PHANTOM conviction score upgrade');
-  if(t.includes('triangle')||t.includes('pattern')||t.includes('breakout')||t.includes('phantom')) {
-    var tri=LIVE.tri&&LIVE.tri.length>0;
-    if(tri){var top=LIVE.tri[0];return 'PHANTOM: Last scan — '+LIVE.tri.length+' pattern(s). Top: '+top.sym+' score '+top.score+' — '+(top.breakout?'BREAKING OUT 🚀':top.nearBreakout?top.distToRes+'% from resistance':' forming')+'.<br>HYDRA: Check OI and funding on '+top.sym+' for confluence before entry.'+xpoll('PHANTOM breakout → HYDRA checks funding/OI for confluence');}
-    return 'PHANTOM: PHANTOM tab → SCAN NOW for live 15m candle analysis. Criteria: flat resistance ±0.4%, rising lows, vol spike ≥1.4×. Conviction score = 60% base +15% vol +10% multi-TF +5% CIPHER fundamentals.';
-  }
-  if(t.includes('gcr')||t.includes('contrarian')) return 'PHANTOM (GCR Classic): Crowd certainty IS the trade. When everyone agrees — everyone is wrong. Check: Is sentiment at ATH? Funding highly positive? Founder overconfident? If yes → that is the short. GCR faded Do Kwon at peak certainty. Anti-herd. Data-driven. Quiet.';
-  if(t.includes('btc')||t.includes('bitcoin')) return 'HYDRA: BTC '+fp(bt.lastPrice)+'. Funding '+(bf.pct||'--')+' ['+(bf.sig||'--')+']. '+(parseFloat(bf.cur||0)<-0.01?'Negative = longs paid = squeeze fuel. Bias LONG on dips.':'Neutral derivatives. Follow Howrie.');
-  if(t.includes('funding')) {var rate=parseFloat(bf.cur||0);return 'HYDRA: BTC Funding '+(bf.pct||'--')+'. '+(rate<-0.01?'NEGATIVE — longs being PAID. Hold and collect funding.':rate>0.03?'HIGH — longs overextended. Tighten stops now.':'Neutral. No derivatives edge.')+xpoll('HYDRA funding squeeze → NEXUS checks sector for cascade risk');}
-  if(t.includes('tao')||t.includes('bittensor')) return 'CIPHER: TAO — $43.2M Q1 revenue, 15x nearest rival. Jensen Huang endorsed publicly. AltRank #10. Social dominance 175% above avg. Volume $367M. PHANTOM: 84% conviction. Accumulate dips — no chase.'+xpoll('CIPHER whale intel → PHANTOM conviction: +5% for TAO fundamentals');
-  if(t.includes('akt')||t.includes('akash')) return 'CIPHER: AKT — $0.74M Q1. 85% cheaper than AWS. AI workloads +300% QoQ. Spot $0.595-0.610, stop $0.585, target $0.700. No leverage on thesis plays. PHANTOM: 78% conviction.';
-  if(t.includes('nmr')||t.includes('numerai')) return 'CIPHER: NMR lag trade. $0.4M Q1 rev. AI hedge fund, deflationary token structure. Flat while AI sector green = coiled spring. Entry $7.40-7.55 spot, stop $7.39, target $8.10. 71% conviction.'+xpoll('NEXUS lag detector active for NMR');
-  if(t.includes('arc')) return 'CIPHER: ARC agents narrative. 68% conviction. Watch $0.048-0.050. Small position only — sector early stage. The ARC averaging-down lesson from last session: blue band on a losing position is NOT a new signal.';
-  if(t.includes('sector')||t.includes('rotation')||t.includes('nexus')) return 'NEXUS: GPU Compute (AKT+RNDR+IO) leading. AI Intelligence (TAO+FET+NEAR) strong. Kill-switch: margin >80%, session -20%, band red. NEXUS tab for live cluster performance + lag trade detection.'+xpoll('NEXUS rotation signal → CIPHER entry timing (wait for confirmation)');
-  if(t.includes('lag')||t.includes('lag trade')) return 'NEXUS: Lag trade = quality token flat/red on green sector day = coiled spring. NEXUS tab after REFRESH for auto-detection. Signal: sector avg +2%+ while token flat or negative. Confirm with Howrie blue band before entry.';
-  if(t.includes('howrie')||t.includes('band')||t.includes('rsi')) return 'COORDINATOR: Howrie rules (you built this): Blue band + RSI>50 = HOLD LONGS. Red band = EXIT IMMEDIATELY — no hope, no hold, click the button. Green triangle = RSI>80 + vol cross = momentum confirmation (NOT overbought). Multiple red triangles = capitulation = smart money buying. Band resets every RSI 50 cross = master signal.';
-  if(t.includes('rule')||t.includes('exit')||t.includes('stop')) return 'COORDINATOR: Core rules baked into all agents — (1) Red band = exit immediately. (2) Never add to a losing position. (3) Never let winner become loser. (4) 50% daily target = protect it. (5) Stop-to-liq ≥1% at 20x. (6) Max 80% margin. (7) Spot for thesis, perps for short-term only. Rule 9 (ARC lesson): fresh blue band on new candle = new trade, not reason to average down.';
-  if(t.includes('siren')) return 'HYDRA: SIREN — check Howrie. Blue band = hold + collect negative funding. Red band = exit immediately. Funding payment only worth holding if band stays blue. SIREN AltRank #1 last session — social momentum strong.';
-  if(t.includes('near')&&(t.includes('triangle')||t.includes('flag'))) return 'PHANTOM: NEAR lesson — triangle after strong downtrend = bear flag. Ascending triangle looks bullish but base is weak = overhead supply from trapped longs. Always check 1H structure before 15m entry. What came before matters.';
-  if(t.includes('scan')||t.includes('watchlist')||t.includes('best')) return 'COORDINATOR: REFRESH for live prices. Priorities: TAO 84%, AKT 78%, NMR 71%, ARC 68%. Overview → SCAN SOCIAL for AltRank. CIPHER → SOCIAL SCAN for Whatsup. PHANTOM → SCAN NOW for triangles. ORACLE → FETCH MACRO for news.';
-
-  return 'COORDINATOR (GCR): BTC '+fp(bt.lastPrice)+' | F&G '+fgv+' | Funding '+(bf.pct||'--')+'. Ask about: token (TAO/AKT/NMR/ARC/SIREN), pattern/breakout, Howrie rules, macro/Bloomberg, funding, sector rotation, lag trade, GCR contrarian. All 5 agents live — cross-pollination active.';
+  msgs.appendChild(div);
+  msgs.scrollTop=99999;
 }
 
 // ── CLOCK ──
