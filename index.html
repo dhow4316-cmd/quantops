@@ -3,143 +3,219 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QUANT-OPS v2.4</title>
+<title>QUANT-OPS v2.5</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0a0c10;--surface:#0f1218;--surface2:#151b24;
-  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);
-  --text:#e8eaf0;--muted:#6b7890;
-  --accent:#00d4ff;--green:#00e87a;--red:#ff4560;--amber:#ffb020;--purple:#a78bfa;
+  --bg:#080b0f;--surface:#0c1018;--surface2:#111720;--surface3:#161e28;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#dde3ed;--muted:#5a6880;--muted2:#8a9ab5;
+  --accent:#00c8f0;--green:#00e67a;--red:#ff3d5a;--amber:#f5a623;--purple:#9b7ef8;
+  --accent-dim:rgba(0,200,240,0.08);--green-dim:rgba(0,230,122,0.08);
+  --red-dim:rgba(255,61,90,0.08);--amber-dim:rgba(245,166,35,0.08);
+  --purple-dim:rgba(155,126,248,0.1);
 }
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;height:100vh;overflow:hidden;}
-header{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:fixed;top:0;left:0;right:0;z-index:100;}
-.logo{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;}
-.hdr-r{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--muted);}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-.refresh-btn{background:var(--accent);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em;}
-.refresh-btn:hover{opacity:.85;}
-.ticker{height:32px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:20px;overflow-x:auto;margin-top:44px;flex-shrink:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;height:100vh;overflow:hidden;font-size:12px;}
+
+/* HEADER */
+header{height:46px;background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:fixed;top:0;left:0;right:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--accent);letter-spacing:.15em;display:flex;align-items:center;gap:8px;}
+.logo-ver{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);font-weight:400;border:1px solid var(--border2);padding:2px 6px;border-radius:4px;}
+.hdr-r{display:flex;align-items:center;gap:14px;font-size:10px;color:var(--muted);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,122,.4);}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,230,122,0);}}
+.hdr-stat{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface2);border-radius:5px;border:1px solid var(--border);}
+.hdr-stat span{font-size:10px;}
+#hdr-time{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:72px;text-align:center;}
+.refresh-btn{background:var(--accent);color:#000;border:none;border-radius:6px;padding:5px 14px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;transition:all .15s;}
+.refresh-btn:hover{opacity:.85;transform:translateY(-1px);}
+.refresh-btn:disabled{opacity:.5;transform:none;cursor:not-allowed;}
+
+/* TICKER */
+.ticker{height:30px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:20px;overflow-x:auto;margin-top:46px;flex-shrink:0;}
 .ticker::-webkit-scrollbar{display:none;}
-.tick-item{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:11px;}
+.tick-item{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:10px;}
 .tick-sym{font-weight:700;color:var(--text);}
-.tick-p{font-family:monospace;}
 .up{color:var(--green);}
 .dn{color:var(--red);}
-.shell{display:grid;grid-template-columns:180px 1fr;height:calc(100vh - 76px - 52px);}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:8px 0;}
-.sb-sec{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.12em;padding:8px 13px 4px;text-transform:uppercase;}
-.sb-item{display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;}
-.sb-item:hover{background:rgba(255,255,255,.04);border-left-color:var(--accent);}
-.sb-item.active{background:rgba(0,212,255,.06);border-left-color:var(--accent);}
-.sb-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
-.sb-name{font-size:12px;font-weight:600;}
-.sb-role{font-size:9px;color:var(--muted);}
-.sb-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:auto;font-family:monospace;}
-.bull{background:rgba(0,232,122,.15);color:var(--green);}
-.bear{background:rgba(255,69,96,.15);color:var(--red);}
-.watch{background:rgba(255,176,32,.15);color:var(--amber);}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:185px 1fr;height:calc(100vh - 76px - 48px);}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:6px 0 80px;display:flex;flex-direction:column;}
+.sb-sec{font-size:8px;font-weight:700;color:var(--muted);letter-spacing:.14em;padding:10px 14px 4px;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;}
+.sb-item:hover{background:rgba(255,255,255,.025);border-left-color:var(--muted);}
+.sb-item.active{background:var(--accent-dim);border-left-color:var(--accent);}
+.sb-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.sb-name{font-size:11px;font-weight:700;font-family:'Syne',sans-serif;}
+.sb-role{font-size:8px;color:var(--muted);letter-spacing:.05em;margin-top:1px;}
+.sb-badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:auto;font-family:'JetBrains Mono',monospace;}
+.bull{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,122,.2);}
+.bear{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,61,90,.2);}
+.watch{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.2);}
 .divider{height:1px;background:var(--border);margin:6px 0;}
+
+/* F&G SIDEBAR */
+.fg-sidebar{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+.fg-label{font-size:8px;color:var(--muted);margin-bottom:6px;font-weight:700;letter-spacing:.1em;}
+.fg-val{font-size:24px;font-weight:700;margin-bottom:2px;font-family:'Syne',sans-serif;}
+.fg-cls{font-size:9px;margin-bottom:8px;letter-spacing:.05em;}
+.fg-bar{height:5px;background:linear-gradient(to right,var(--red) 0%,var(--amber) 35%,var(--green) 70%,var(--red) 100%);border-radius:3px;position:relative;margin-bottom:4px;}
+.fg-dot{width:11px;height:11px;border-radius:50%;background:#fff;position:absolute;top:-3px;transform:translateX(-50%);border:2px solid var(--bg);transition:left .5s ease;}
+
+/* CONTENT */
 .content{overflow-y:auto;background:var(--bg);}
-.view{display:none;padding:16px;}
+.view{display:none;padding:14px;}
 .view.active{display:block;}
-.fg-sidebar{padding:10px 13px;border-top:1px solid var(--border);}
-.fg-label{font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:700;letter-spacing:.08em;}
-.fg-val{font-size:22px;font-weight:700;margin-bottom:2px;}
-.fg-cls{font-size:10px;margin-bottom:6px;}
-.fg-bar{height:6px;background:linear-gradient(to right,var(--red),var(--amber),var(--green));border-radius:3px;position:relative;margin-bottom:4px;}
-.fg-dot{width:10px;height:10px;border-radius:50%;background:#fff;position:absolute;top:-2px;transform:translateX(-50%);border:2px solid var(--bg);}
+
+/* PANELS */
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
-.panel-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
-.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.agent-card{background:var(--surface2);border-radius:8px;padding:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
-.agent-card:hover{border-color:var(--accent);}
-.ac-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.ac-icon{font-size:18px;}
-.ac-name{font-size:12px;font-weight:700;}
-.ac-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-family:monospace;font-weight:700;margin-left:auto;}
-.ac-body{font-size:11px;color:var(--muted);line-height:1.6;}
-.wl-table{width:100%;border-collapse:collapse;}
-.wl-table th{font-size:9px;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:700;letter-spacing:.08em;}
-.wl-table td{font-size:11px;padding:6px 8px;border-bottom:1px solid var(--border);font-family:monospace;}
-.wl-table tr:hover td{background:rgba(255,255,255,.02);}
-.wl-sym{font-weight:700;color:var(--text);font-family:monospace;}
+.panel-title{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
+.panel-title-main{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.05em;}
+
+/* STAT GRIDS */
 .ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
 .ov-stat{background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border);text-align:center;}
-.ov-val{font-size:20px;font-weight:700;font-family:monospace;margin-bottom:2px;}
-.ov-lbl{font-size:9px;color:var(--muted);letter-spacing:.08em;}
-.chat-bar{position:fixed;bottom:0;left:180px;right:0;height:52px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;z-index:50;}
-.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:12px;padding:8px 16px;outline:none;}
+.ov-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.ov-lbl{font-size:8px;color:var(--muted);letter-spacing:.1em;}
+
+/* AGENT CARDS */
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.agent-card{background:var(--surface2);border-radius:8px;padding:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.agent-card:hover{border-color:var(--accent);background:var(--surface3);}
+.ac-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ac-icon{font-size:16px;}
+.ac-name{font-size:11px;font-weight:700;font-family:'Syne',sans-serif;}
+.ac-badge{font-size:8px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:auto;}
+.ac-body{font-size:10px;color:var(--muted);line-height:1.6;}
+
+/* WATCHLIST */
+.wl-table{width:100%;border-collapse:collapse;}
+.wl-table th{font-size:8px;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);font-weight:700;letter-spacing:.1em;}
+.wl-table td{font-size:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;}
+.wl-table tr:hover td{background:rgba(255,255,255,.015);}
+.wl-sym{font-weight:700;color:var(--text);}
+
+/* CHAT BAR */
+.chat-bar{position:fixed;bottom:0;left:185px;right:0;height:48px;background:var(--surface);border-top:1px solid var(--border2);display:flex;align-items:center;gap:8px;padding:0 12px;z-index:50;}
+.chat-toggle-btn{width:32px;height:32px;border-radius:8px;background:var(--accent-dim);border:1px solid rgba(0,200,240,.2);color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.chat-toggle-btn:hover{background:rgba(0,200,240,.15);}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:7px 14px;outline:none;font-family:'JetBrains Mono',monospace;transition:border-color .15s;}
 .chat-input:focus{border-color:var(--accent);}
-.chat-send{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#000;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.chat-panel{position:fixed;bottom:52px;right:0;width:380px;height:420px;background:var(--surface);border-left:1px solid var(--border);border-top:1px solid var(--border);display:none;flex-direction:column;z-index:51;}
+.chat-send{height:32px;padding:0 14px;border-radius:8px;background:var(--accent);color:#000;border:none;font-size:10px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;flex-shrink:0;transition:all .15s;}
+.chat-send:hover{opacity:.85;}
+
+/* CHAT PANEL */
+.chat-panel{position:fixed;bottom:48px;right:0;width:400px;height:440px;background:var(--surface);border-left:1px solid var(--border2);border-top:1px solid var(--border2);display:none;flex-direction:column;z-index:51;box-shadow:-4px 0 20px rgba(0,0,0,.4);}
 .chat-panel.open{display:flex;}
-.chat-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;align-items:center;}
-.chat-close{cursor:pointer;color:var(--muted);font-size:16px;}
+.chat-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;align-items:center;font-family:'Syne',sans-serif;letter-spacing:.06em;}
+.chat-close{cursor:pointer;color:var(--muted);font-size:18px;line-height:1;transition:color .15s;}
+.chat-close:hover{color:var(--text);}
 .chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;}
-.msg{padding:8px 10px;border-radius:8px;font-size:11px;line-height:1.6;max-width:92%;}
-.msg-user{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);align-self:flex-end;}
+.msg{padding:8px 10px;border-radius:8px;font-size:10px;line-height:1.7;max-width:94%;}
+.msg-user{background:var(--accent-dim);border:1px solid rgba(0,200,240,.15);align-self:flex-end;}
 .msg-agent{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;}
-.msg-name{font-size:9px;font-weight:700;margin-bottom:2px;font-family:monospace;}
-.action-btn{border:none;border-radius:6px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.05em;}
+.msg-name{font-size:8px;font-weight:700;margin-bottom:3px;letter-spacing:.06em;}
+
+/* ACTION BUTTONS */
+.action-btn{border:none;border-radius:6px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.06em;font-family:'JetBrains Mono',monospace;transition:all .15s;}
+.action-btn:hover{opacity:.85;transform:translateY(-1px);}
+.action-btn:disabled{opacity:.5;transform:none;cursor:not-allowed;}
+
+/* RULE CARDS */
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rule-card{background:var(--surface2);padding:10px;border-radius:8px;font-size:10px;color:var(--muted);line-height:1.7;}
+.rule-title{font-weight:700;margin-bottom:5px;font-size:9px;letter-spacing:.08em;}
+
+/* CONVICTION CALLS */
+.conviction-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.conviction-card{background:var(--surface2);border-radius:8px;padding:10px;border:1px solid var(--border);}
+.conv-header{font-size:9px;font-weight:700;margin-bottom:5px;letter-spacing:.06em;}
+.conv-body{font-size:10px;color:var(--muted);line-height:1.6;}
+
+/* SCROLLBAR */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+
+/* TRIANGLE RESULTS */
+.tri-card{background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;}
+.tri-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.tri-tag{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;}
+.tri-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;}
+.tri-stat{background:var(--surface);padding:6px;border-radius:6px;font-size:9px;}
+
+/* MACRO CARDS */
+.macro-card{background:var(--surface2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:10px;margin-bottom:6px;}
+.macro-src{font-size:8px;color:var(--muted);font-weight:700;margin-bottom:3px;letter-spacing:.08em;}
+.macro-title{font-size:10px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:4px;}
+.macro-desc{font-size:9px;color:var(--muted);line-height:1.5;}
+
+/* GCR BADGE */
+.gcr-badge{display:inline-flex;align-items:center;gap:4px;font-size:8px;padding:2px 8px;border-radius:4px;background:rgba(155,126,248,.1);color:var(--purple);border:1px solid rgba(155,126,248,.2);font-weight:700;letter-spacing:.06em;}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">QUANT-OPS // COMMAND CENTER v2.4</div>
+  <div class="logo">
+    QUANT-OPS
+    <span class="logo-ver">v2.5</span>
+    <span class="gcr-badge">⚡ GCR</span>
+  </div>
   <div class="hdr-r">
-    <span><span class="live-dot"></span>BYBIT LIVE</span>
-    <span id="hdr-time">--:--:-- UTC</span>
-    <span>F&G: <span id="hdr-fg">--</span></span>
-    <span>BTC DOM: <span id="hdr-dom">~54%</span></span>
-    <button class="refresh-btn" id="rbtn" onclick="refreshAll()">REFRESH</button>
+    <div class="hdr-stat"><span class="live-dot"></span><span>BYBIT LIVE</span></div>
+    <div class="hdr-stat"><span id="hdr-time">--:--:-- UTC</span></div>
+    <div class="hdr-stat"><span style="color:var(--muted)">F&G</span>&nbsp;<span id="hdr-fg" style="font-weight:700">--</span></div>
+    <div class="hdr-stat"><span style="color:var(--muted)">DOM</span>&nbsp;<span id="hdr-dom" style="font-weight:700">~54%</span></div>
+    <button class="refresh-btn" id="rbtn" onclick="refreshAll()">⟳ REFRESH</button>
   </div>
 </header>
 
 <div class="ticker" id="ticker">
-  <span style="font-size:10px;color:var(--muted)">Loading prices...</span>
+  <span style="font-size:9px;color:var(--muted)">Hit REFRESH to load live prices...</span>
 </div>
 
 <div class="shell">
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sb-sec">Navigation</div>
-    <div class="sb-item active" onclick="sv('overview',this)">
-      <div class="sb-icon" style="background:rgba(0,212,255,.1)">🧠</div>
+    <div class="sb-item active" id="nav-overview" onclick="sv('overview','nav-overview')">
+      <div class="sb-icon" style="background:var(--accent-dim)">🧠</div>
       <div><div class="sb-name">Overview</div><div class="sb-role">COORDINATOR</div></div>
     </div>
-    <div class="sb-item" onclick="sv('watchlist',this)">
-      <div class="sb-icon" style="background:rgba(0,212,255,.08)">📋</div>
+    <div class="sb-item" id="nav-watchlist" onclick="sv('watchlist','nav-watchlist')">
+      <div class="sb-icon" style="background:rgba(255,255,255,.04)">📋</div>
       <div><div class="sb-name">Watchlist</div><div class="sb-role">27 SYMBOLS</div></div>
     </div>
     <div class="divider"></div>
     <div class="sb-sec">Agents</div>
-    <div class="sb-item" onclick="sv('hydra',this)">
-      <div class="sb-icon" style="background:rgba(255,176,32,.1)">📊</div>
+    <div class="sb-item" id="nav-hydra" onclick="sv('hydra','nav-hydra')">
+      <div class="sb-icon" style="background:var(--amber-dim)">📊</div>
       <div><div class="sb-name">HYDRA</div><div class="sb-role">FUTURES QUANT</div></div>
       <span class="sb-badge watch" id="hydra-badge">--</span>
     </div>
-    <div class="sb-item" onclick="sv('cipher',this)">
-      <div class="sb-icon" style="background:rgba(99,102,241,.15)">🤖</div>
+    <div class="sb-item" id="nav-cipher" onclick="sv('cipher','nav-cipher')">
+      <div class="sb-icon" style="background:var(--purple-dim)">🤖</div>
       <div><div class="sb-name">CIPHER</div><div class="sb-role">AI SECTOR</div></div>
       <span class="sb-badge bull" id="cipher-badge">AI BULL</span>
     </div>
-    <div class="sb-item" onclick="sv('oracle',this)">
-      <div class="sb-icon" style="background:rgba(239,68,68,.1)">🌐</div>
+    <div class="sb-item" id="nav-oracle" onclick="sv('oracle','nav-oracle')">
+      <div class="sb-icon" style="background:var(--red-dim)">🌐</div>
       <div><div class="sb-name">ORACLE</div><div class="sb-role">MACRO</div></div>
       <span class="sb-badge watch" id="oracle-badge">--</span>
     </div>
-    <div class="sb-item" onclick="sv('nexus',this)">
-      <div class="sb-icon" style="background:rgba(0,232,122,.1)">⛓</div>
+    <div class="sb-item" id="nav-nexus" onclick="sv('nexus','nav-nexus')">
+      <div class="sb-icon" style="background:var(--green-dim)">⛓</div>
       <div><div class="sb-name">NEXUS</div><div class="sb-role">SECTORS</div></div>
       <span class="sb-badge watch" id="nexus-badge">--</span>
     </div>
-    <div class="sb-item" onclick="sv('phantom',this)">
-      <div class="sb-icon" style="background:rgba(167,139,250,.15)">🎯</div>
+    <div class="sb-item" id="nav-phantom" onclick="sv('phantom','nav-phantom')">
+      <div class="sb-icon" style="background:var(--purple-dim)">🎯</div>
       <div><div class="sb-name">PHANTOM</div><div class="sb-role">PATTERNS</div></div>
       <span class="sb-badge watch" id="phantom-badge">WATCH</span>
     </div>
@@ -152,42 +228,46 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     </div>
   </div>
 
+  <!-- MAIN CONTENT -->
   <div class="content">
 
     <!-- OVERVIEW -->
     <div class="view active" id="view-overview">
       <div class="ov-grid">
         <div class="ov-stat"><div class="ov-val" id="ov-btc" style="color:var(--accent)">--</div><div class="ov-lbl">BTC PRICE</div></div>
-        <div class="ov-stat"><div class="ov-val" id="ov-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR AND GREED</div></div>
+        <div class="ov-stat"><div class="ov-val" id="ov-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR & GREED</div></div>
         <div class="ov-stat"><div class="ov-val" id="ov-funding" style="color:var(--amber)">--</div><div class="ov-lbl">BTC FUNDING</div></div>
       </div>
-      <!-- AltRank Hot List -->
+
+      <!-- AltRank -->
       <div class="panel">
         <div class="panel-title">
-          <span>🔥 LUNARCRUSH ALTRANK — TOP MOMENTUM</span>
+          <span class="panel-title-main">🔥 LUNARCRUSH ALTRANK — TOP MOMENTUM</span>
           <button class="action-btn" onclick="fetchAltRank()" id="altrank-btn" style="background:var(--purple);color:#fff;">SCAN SOCIAL</button>
         </div>
-        <div id="altrank-status" style="font-size:10px;color:var(--muted);margin-bottom:8px;">Hit SCAN SOCIAL to load LunarCrush AltRank momentum leaders.</div>
+        <div id="altrank-status" style="font-size:9px;color:var(--muted);margin-bottom:8px;">Hit SCAN SOCIAL to load LunarCrush AltRank momentum leaders.</div>
         <div id="altrank-results"></div>
       </div>
+
+      <!-- Agent Status -->
       <div class="panel">
-        <div class="panel-title">Agent Status</div>
+        <div class="panel-title"><span class="panel-title-main">Agent Status — GCR Framework</span></div>
         <div class="agent-grid">
-          <div class="agent-card" onclick="sv('hydra',document.querySelector('[onclick*=hydra]'))">
+          <div class="agent-card" onclick="sv('hydra','nav-hydra')">
             <div class="ac-header"><span class="ac-icon">📊</span><span class="ac-name" style="color:var(--amber)">HYDRA</span><span class="ac-badge watch" id="ov-hydra-b">--</span></div>
-            <div class="ac-body" id="ov-hydra-t">Futures quant — funding, OI, liquidations. Click to expand.</div>
+            <div class="ac-body" id="ov-hydra-t">Futures quant — Sharpe ratio over win rate. Funding, OI, liquidations. Click to expand.</div>
           </div>
-          <div class="agent-card" onclick="sv('cipher',document.querySelector('[onclick*=cipher]'))">
+          <div class="agent-card" onclick="sv('cipher','nav-cipher')">
             <div class="ac-header"><span class="ac-icon">🤖</span><span class="ac-name" style="color:var(--purple)">CIPHER</span><span class="ac-badge bull">AI BULL</span></div>
-            <div class="ac-body">TAO #1 $43.2M Q1 rev. Jensen Huang endorsed. AltRank #10. Accumulate dips.</div>
+            <div class="ac-body">TAO #1 $43.2M Q1 rev. Jensen Huang endorsed. AltRank #10. Narrative precedes price.</div>
           </div>
-          <div class="agent-card" onclick="sv('oracle',document.querySelector('[onclick*=oracle]'))">
+          <div class="agent-card" onclick="sv('oracle','nav-oracle')">
             <div class="ac-header"><span class="ac-icon">🌐</span><span class="ac-name" style="color:var(--red)">ORACLE</span><span class="ac-badge watch" id="ov-oracle-b">--</span></div>
-            <div class="ac-body" id="ov-oracle-t">Macro + F&G + Bloomberg analysis. Click to expand.</div>
+            <div class="ac-body" id="ov-oracle-t">Macro + on-chain + Bloomberg. US-Iran war + 50% rate hike bets. Trade spot over perps.</div>
           </div>
-          <div class="agent-card" onclick="sv('phantom',document.querySelector('[onclick*=phantom]'))">
+          <div class="agent-card" onclick="sv('phantom','nav-phantom')">
             <div class="ac-header"><span class="ac-icon">🎯</span><span class="ac-name" style="color:var(--purple)">PHANTOM</span><span class="ac-badge watch" id="ov-phantom-b">WATCH</span></div>
-            <div class="ac-body">GCR contrarian + triangle scanner + Howrie reader. TAO 84%, AKT 78%, NMR 71%.</div>
+            <div class="ac-body">Pattern + narrative = highest conviction. TAO 84%, AKT 78%, NMR 71%. GCR contrarian filter active.</div>
           </div>
         </div>
       </div>
@@ -196,7 +276,7 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     <!-- WATCHLIST -->
     <div class="view" id="view-watchlist">
       <div class="panel">
-        <div class="panel-title">Watchlist — 27 Symbols</div>
+        <div class="panel-title"><span class="panel-title-main">Watchlist — 27 Symbols</span></div>
         <table class="wl-table">
           <thead><tr><th>SYMBOL</th><th>PRICE</th><th>24H</th><th>FUNDING</th><th>SIGNAL</th></tr></thead>
           <tbody id="wl-body"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Hit REFRESH to load prices</td></tr></tbody>
@@ -207,25 +287,28 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     <!-- HYDRA -->
     <div class="view" id="view-hydra">
       <div class="panel">
-        <div class="panel-title">📊 HYDRA — Futures Quant</div>
+        <div class="panel-title"><span class="panel-title-main">📊 HYDRA — Head Quant Strategist</span></div>
+        <div style="font-size:9px;color:var(--purple);margin-bottom:10px;padding:6px 10px;background:var(--purple-dim);border-radius:6px;border:1px solid rgba(155,126,248,.15);">
+          Archetype: 7am dark room, three screens, cold coffee. Sharpe ratio over win rate. Edge confirmation over excitement. Model decay tracked — flags stale edge after 90 days.
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
           <div class="ov-stat"><div class="ov-val" id="h-btc-p" style="color:var(--accent)">--</div><div class="ov-lbl">BTC PRICE</div></div>
           <div class="ov-stat"><div class="ov-val" id="h-funding" style="color:var(--amber)">--</div><div class="ov-lbl">BTC FUNDING</div></div>
           <div class="ov-stat"><div class="ov-val" id="h-signal" style="color:var(--green)">--</div><div class="ov-lbl">SIGNAL</div></div>
         </div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.8;padding:10px;background:var(--surface2);border-radius:8px;" id="hydra-thesis">Hit REFRESH to load derivatives data.</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;padding:10px;background:var(--surface2);border-radius:8px;" id="hydra-thesis">Hit REFRESH to load derivatives data.</div>
       </div>
       <div class="panel">
-        <div class="panel-title">📐 HYDRA Rules</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--muted);line-height:1.7;">
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--green);font-weight:700;margin-bottom:4px;">FUNDING SIGNALS</div>
-            &lt; -0.01% = longs paid = SQUEEZE FUEL<br>-0.01% to 0% = slight bear = hold<br>0% to 0.03% = neutral = follow price<br><span style="color:var(--red)">&gt; 0.03% = longs heavy = tighten stops</span></div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--amber);font-weight:700;margin-bottom:4px;">POSITION RULES</div>
-            Never deploy &gt;80% margin<br>Stop-to-liq gap ≥1% at 20x<br>Trail stop above entry when in profit<br><span style="color:var(--red)">50% daily target = protect it</span></div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--accent);font-weight:700;margin-bottom:4px;">OI SIGNALS</div>
-            OI rising + price rising = healthy<br>OI rising + price falling = bearish div<br>OI falling + price rising = short squeeze<br>OI falling + price falling = capitulation</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--purple);font-weight:700;margin-bottom:4px;">LIQ HEATMAP</div>
-            Yellow/bright = massive clusters<br>Below price = floor support<br>Above price = short squeeze magnet<br><span style="color:var(--green)">Flush to cluster + recovery = buy</span></div>
+        <div class="panel-title"><span class="panel-title-main">📐 HYDRA Rules</span></div>
+        <div class="rule-grid">
+          <div class="rule-card"><div class="rule-title" style="color:var(--green)">FUNDING SIGNALS</div>
+            &lt; -0.01% → SQUEEZE FUEL — longs paid<br>-0.01% to 0% → slight bear — hold<br>0% to 0.03% → neutral — follow price<br><span style="color:var(--red)">&gt; 0.03% → longs heavy — tighten stops</span></div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--amber)">POSITION RULES</div>
+            Never deploy &gt;80% margin (NEXUS kill)<br>Stop-to-liq gap ≥1% at 20x leverage<br>Trail stop above entry when in profit<br><span style="color:var(--red)">50% daily target = protect it</span></div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--accent)">OI SIGNALS</div>
+            OI ↑ + price ↑ = healthy trend<br>OI ↑ + price ↓ = bearish divergence<br>OI ↓ + price ↑ = short squeeze<br>OI ↓ + price ↓ = capitulation buy zone</div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--purple)">LIQ HEATMAP</div>
+            Yellow/bright = massive clusters<br>Below price = floor support level<br>Above price = short squeeze magnet<br><span style="color:var(--green)">Flush to cluster + recovery = buy</span></div>
         </div>
       </div>
     </div>
@@ -234,10 +317,13 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     <div class="view" id="view-cipher">
       <div class="panel">
         <div class="panel-title">
-          <span>🤖 CIPHER — AI Sector Intelligence</span>
+          <span class="panel-title-main">🤖 CIPHER — AI Sector Intelligence</span>
           <button class="action-btn" onclick="fetchWhatsUp()" id="whatsup-btn" style="background:var(--purple);color:#fff;">SOCIAL SCAN</button>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Q1 2026 AI Revenue Rankings (@DamiDefi) · Hit SOCIAL SCAN for live LunarCrush intelligence on top tokens</div>
+        <div style="font-size:9px;color:var(--purple);margin-bottom:10px;padding:6px 10px;background:var(--purple-dim);border-radius:6px;border:1px solid rgba(155,126,248,.15);">
+          Archetype: Former insider. Knows every CEO, every pivot, every GPU shortage rumour before X. Narrative precedes price. Cross-references founder activity + on-chain network metrics.
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:8px;">Q1 2026 AI Revenue Rankings (@DamiDefi) · Hit SOCIAL SCAN for live LunarCrush intelligence</div>
         <div id="whatsup-results" style="margin-bottom:12px;"></div>
         <table class="wl-table">
           <thead><tr><th>RANK</th><th>TOKEN</th><th>Q1 REVENUE</th><th>PRICE</th><th>24H</th><th>NOTE</th></tr></thead>
@@ -245,12 +331,12 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
         </table>
       </div>
       <div class="panel">
-        <div class="panel-title">📐 CIPHER — Sector Map</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--muted);line-height:1.7;">
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--green);"><div style="color:var(--green);font-weight:700;margin-bottom:4px;">GPU COMPUTE</div>AKT · RNDR · IO<br><span style="color:var(--green)">Leading cluster — AI workloads +300% QoQ</span></div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--accent);"><div style="color:var(--accent);font-weight:700;margin-bottom:4px;">AI INTELLIGENCE</div>TAO · FET · NEAR<br><span style="color:var(--accent)">TAO dominant — Jensen Huang endorsed</span></div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--purple);"><div style="color:var(--purple);font-weight:700;margin-bottom:4px;">DATA / ORACLE</div>GRT · LINK · ICP<br><span style="color:var(--muted)">Building — accumulate quality dips</span></div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--amber);"><div style="color:var(--amber);font-weight:700;margin-bottom:4px;">AGENTS</div>VIRTUAL · ARC · NMR<br><span style="color:var(--muted)">Early stage — small positions only</span></div>
+        <div class="panel-title"><span class="panel-title-main">📐 CIPHER — Sector Map</span></div>
+        <div class="rule-grid">
+          <div class="rule-card" style="border-left:3px solid var(--green)"><div class="rule-title" style="color:var(--green)">GPU COMPUTE</div>AKT · RNDR · IO<br><span style="color:var(--green)">Leading cluster — AI workloads +300% QoQ</span></div>
+          <div class="rule-card" style="border-left:3px solid var(--accent)"><div class="rule-title" style="color:var(--accent)">AI INTELLIGENCE</div>TAO · FET · NEAR<br><span style="color:var(--accent)">TAO dominant — Jensen Huang endorsed</span></div>
+          <div class="rule-card" style="border-left:3px solid var(--purple)"><div class="rule-title" style="color:var(--purple)">DATA / ORACLE</div>GRT · LINK · ICP<br><span style="color:var(--muted)">Building — accumulate quality dips</span></div>
+          <div class="rule-card" style="border-left:3px solid var(--amber)"><div class="rule-title" style="color:var(--amber)">AGENTS</div>VIRTUAL · ARC · NMR<br><span style="color:var(--muted)">Early stage — small positions only</span></div>
         </div>
       </div>
     </div>
@@ -258,39 +344,41 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     <!-- ORACLE -->
     <div class="view" id="view-oracle">
       <div class="panel">
-        <div class="panel-title">🌐 ORACLE — Macro Intelligence</div>
+        <div class="panel-title"><span class="panel-title-main">🌐 ORACLE — Macro + On-Chain Intelligence</span></div>
+        <div style="font-size:9px;color:var(--red);margin-bottom:10px;padding:6px 10px;background:var(--red-dim);border-radius:6px;border:1px solid rgba(255,61,90,.15);">
+          Archetype: 6am alert pings. Traces whale clusters. "That's a fund. Dump signal." Dual role: on-chain early warning + macro narrative framing. Lead time &lt;4h before price moves &gt;1%.
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
           <div class="ov-stat"><div class="ov-val" id="or-fg" style="color:var(--red)">--</div><div class="ov-lbl">FEAR & GREED</div></div>
           <div class="ov-stat"><div class="ov-val" id="or-cls" style="color:var(--muted);font-size:13px">--</div><div class="ov-lbl">CLASSIFICATION</div></div>
           <div class="ov-stat"><div class="ov-val" id="or-btc-dom" style="color:var(--accent)">~54%</div><div class="ov-lbl">BTC DOMINANCE</div></div>
         </div>
-        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.8;" id="oracle-thesis">Hit REFRESH to load macro data.</div>
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.8;" id="oracle-thesis">Hit REFRESH to load macro data.</div>
       </div>
       <div class="panel">
         <div class="panel-title">
-          <span>📰 MACRO NEWS FEED</span>
-          <div style="display:flex;gap:8px;">
+          <span class="panel-title-main">📰 MACRO NEWS FEED</span>
+          <div style="display:flex;gap:6px;">
             <button class="action-btn" onclick="fetchMacroNews()" id="macro-btn" style="background:var(--red);color:#fff;">FETCH MACRO</button>
             <button class="action-btn" onclick="clearMacroNews()" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);">CLEAR</button>
           </div>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Live AI-generated macro headlines scored BULLISH/BEARISH/NEUTRAL. Paste Bloomberg email below for signal extraction.</div>
-        <div id="macro-status" style="font-size:11px;color:var(--muted);padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:8px;display:none;"></div>
+        <div id="macro-status" style="font-size:10px;color:var(--muted);padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:8px;display:none;"></div>
         <div id="macro-headlines"></div>
         <div style="margin-top:12px;">
-          <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.08em;margin-bottom:6px;">📧 PASTE BLOOMBERG EMAIL → ORACLE ANALYSIS</div>
-          <textarea id="bloomberg-paste" placeholder="Paste Bloomberg newsletter content here..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:10px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:'Segoe UI',sans-serif;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <div style="font-size:9px;font-weight:700;color:var(--amber);letter-spacing:.08em;margin-bottom:6px;">📧 PASTE BLOOMBERG EMAIL → ORACLE ANALYSIS</div>
+          <textarea id="bloomberg-paste" placeholder="Paste Bloomberg newsletter content here..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:10px;padding:10px;line-height:1.6;resize:vertical;min-height:80px;outline:none;font-family:'JetBrains Mono',monospace;transition:border-color .15s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
           <button class="action-btn" onclick="analyseBloomberg()" style="margin-top:6px;background:var(--amber);color:#000;">ANALYSE WITH ORACLE</button>
         </div>
         <div id="bloomberg-analysis" style="margin-top:10px;"></div>
       </div>
       <div class="panel">
-        <div class="panel-title">📐 ORACLE Rules</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--muted);line-height:1.7;">
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--green);font-weight:700;margin-bottom:4px;">BULLISH MACRO</div>DXY falling · F&G ≤ 25<br>BTC exchange outflows<br>Rate cut expectations rising</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--red);font-weight:700;margin-bottom:4px;">BEARISH MACRO</div>DXY rising · F&G ≥ 75<br>Rate hike bets · Oil spike<br>Geopolitical escalation</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--amber);font-weight:700;margin-bottom:4px;">CURRENT (Bloomberg Mar 23)</div>US-Iran war ongoing<br>50% rate HIKE bet by Oct<br>No cuts expected 2026</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;"><div style="color:var(--accent);font-weight:700;margin-bottom:4px;">IMPLICATION</div>Trade spot over perps<br>F&G low = accumulate quality<br>Avoid leverage in macro events</div>
+        <div class="panel-title"><span class="panel-title-main">📐 ORACLE Rules</span></div>
+        <div class="rule-grid">
+          <div class="rule-card"><div class="rule-title" style="color:var(--green)">BULLISH MACRO</div>DXY falling · F&G ≤25<br>BTC exchange outflows strong<br>Rate cut expectations rising<br>Whale accumulation on Nansen</div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--red)">BEARISH MACRO</div>DXY rising · F&G ≥75<br>Rate hike bets · Oil spike<br>Geopolitical escalation ongoing<br>Exchange inflows (distribution)</div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--amber)">CURRENT (Mar 25)</div>US-Iran war ongoing<br>50% rate HIKE bet by Oct 2026<br>No cuts expected this year<br>$39T US debt — dollar pressure</div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--accent)">IMPLICATION</div>Trade spot over perps<br>F&G low = accumulate quality<br>Avoid leverage in macro events<br>BTC long-term thesis intact</div>
         </div>
       </div>
     </div>
@@ -298,81 +386,90 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
     <!-- NEXUS -->
     <div class="view" id="view-nexus">
       <div class="panel">
-        <div class="panel-title">⛓ NEXUS — Sector Rotation Intelligence</div>
-        <div style="font-size:11px;color:var(--muted);padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:10px;line-height:1.8;">
-          <span style="color:var(--accent);font-weight:700;">Rotation order:</span> BTC → ETH → L1s → AI sectors → small caps. Money flows in this sequence. Find where it is today.
+        <div class="panel-title"><span class="panel-title-main">⛓ NEXUS — Risk & Sector Rotation</span></div>
+        <div style="font-size:9px;color:var(--green);margin-bottom:10px;padding:6px 10px;background:var(--green-dim);border-radius:6px;border:1px solid rgba(0,230,122,.15);">
+          Archetype: The one who says no. Calm enforcer. Never excited. Kill-switch: margin &gt;80%, session -20%, band red, sector rotation reverses. GPU cluster cold + macro red = NEXUS calls halt.
+        </div>
+        <div style="font-size:10px;color:var(--muted);padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:10px;line-height:1.8;">
+          <span style="color:var(--accent);font-weight:700;">Rotation order:</span> BTC → ETH → L1s → AI sectors → small caps. Money flows in sequence. Find where it is today.
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="nexus-clusters">
           <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--green);">
-            <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:6px;">🔥 GPU COMPUTE — LEADING</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.8;" id="nx-gpu">AKT · RNDR · IO<br><span id="nx-gpu-p"></span></div>
+            <div style="font-size:9px;font-weight:700;color:var(--green);margin-bottom:6px;">🔥 GPU COMPUTE — LEADING</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.9;" id="nx-gpu">AKT · RNDR · IO<br>--</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--accent);">
-            <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:6px;">💡 AI INTELLIGENCE — STRONG</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.8;" id="nx-ai">TAO · FET · NEAR<br><span id="nx-ai-p"></span></div>
+            <div style="font-size:9px;font-weight:700;color:var(--accent);margin-bottom:6px;">💡 AI INTELLIGENCE — STRONG</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.9;" id="nx-ai">TAO · FET · NEAR<br>--</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--purple);">
-            <div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:6px;">📡 DATA / ORACLE — BUILDING</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.8;" id="nx-data">GRT · LINK · ICP<br><span id="nx-data-p"></span></div>
+            <div style="font-size:9px;font-weight:700;color:var(--purple);margin-bottom:6px;">📡 DATA / ORACLE — BUILDING</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.9;" id="nx-data">GRT · LINK · ICP<br>--</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:12px;border-left:3px solid var(--amber);">
-            <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:6px;">🤖 AGENTS — EARLY</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.8;" id="nx-agents">VIRTUAL · ARC · NMR<br><span id="nx-agents-p"></span></div>
+            <div style="font-size:9px;font-weight:700;color:var(--amber);margin-bottom:6px;">🤖 AGENTS — EARLY</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.9;" id="nx-agents">VIRTUAL · ARC · NMR<br>--</div>
           </div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-title">📐 Lag Trade Detector</div>
-        <div id="lag-results" style="font-size:11px;color:var(--muted);">Hit REFRESH to identify lag trade candidates — tokens flat/red while sector is green.</div>
+        <div class="panel-title"><span class="panel-title-main">📐 Lag Trade Detector</span></div>
+        <div id="lag-results" style="font-size:10px;color:var(--muted);">Hit REFRESH to identify lag trade candidates — tokens flat/red while sector is green.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span class="panel-title-main">⚠️ NEXUS Kill-Switch Triggers</span></div>
+        <div class="rule-grid">
+          <div class="rule-card"><div class="rule-title" style="color:var(--red)">HARD STOPS</div>Margin &gt;80% deployed<br>Session loss &gt;20%<br>Howrie band goes red<br>Cascading liquidation risk</div>
+          <div class="rule-card"><div class="rule-title" style="color:var(--amber)">SECTOR SIGNALS</div>GPU cluster goes cold<br>Macro turns red simultaneously<br>Sector rotation reverses<br>NEXUS calls halt before PHANTOM chases</div>
+        </div>
       </div>
     </div>
 
     <!-- PHANTOM -->
     <div class="view" id="view-phantom">
       <div class="panel">
-        <div class="panel-title">🎯 Active Conviction Calls</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div style="background:var(--surface2);border-radius:8px;padding:10px;border:1px solid rgba(0,232,122,.2);">
-            <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:4px;">TAO — 84% CONVICTION</div>
-            <div style="font-size:11px;color:var(--muted);">Subnet flywheel. $43.2M Q1. Jensen Huang endorsed. AltRank #10. Accumulate dips.</div>
+        <div class="panel-title"><span class="panel-title-main">🎯 PHANTOM — Conviction Calls</span></div>
+        <div style="font-size:9px;color:var(--purple);margin-bottom:10px;padding:6px 10px;background:var(--purple-dim);border-radius:6px;border:1px solid rgba(155,126,248,.15);">
+          Archetype: Low-key confident. "I ran this before — don't chase, let it bleed first." Pattern + narrative alignment = highest conviction. One without the other = wait. Max conviction cap: 90%.
+        </div>
+        <div class="conviction-grid">
+          <div class="conviction-card" style="border-color:rgba(0,230,122,.25);">
+            <div class="conv-header" style="color:var(--green);">TAO — 84% CONVICTION</div>
+            <div class="conv-body">Subnet flywheel. $43.2M Q1. Jensen Huang endorsed. AltRank #10. Social dominance 175% above avg. Accumulate dips — no chase.</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px;border:1px solid rgba(0,232,122,.15);">
-            <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:4px;">AKT×RNDR — 78%</div>
-            <div style="font-size:11px;color:var(--muted);">GPU convergence. Spot $0.595-0.610, stop $0.585, target $0.700.</div>
+          <div class="conviction-card" style="border-color:rgba(0,230,122,.15);">
+            <div class="conv-header" style="color:var(--green);">AKT×RNDR — 78%</div>
+            <div class="conv-body">GPU convergence narrative. Spot entry $0.595-0.610, stop $0.585, target $0.700. CIPHER confirms: 85% cheaper than AWS.</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px;border:1px solid rgba(255,176,32,.2);">
-            <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:4px;">NMR — 71% LAG TRADE</div>
-            <div style="font-size:11px;color:var(--muted);">AI hedge fund, flat while sector green. Entry $7.40-7.55 spot, stop $7.39, target $8.10.</div>
+          <div class="conviction-card" style="border-color:rgba(245,166,35,.2);">
+            <div class="conv-header" style="color:var(--amber);">NMR — 71% LAG TRADE</div>
+            <div class="conv-body">AI hedge fund token, deflationary. Flat while AI sector green. Entry $7.40-7.55 spot, stop $7.39, target $8.10.</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px;border:1px solid rgba(167,139,250,.2);">
-            <div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px;">ARC — 68% EARLY</div>
-            <div style="font-size:11px;color:var(--muted);">Agents narrative. Watch $0.048-0.050. Small position only.</div>
+          <div class="conviction-card" style="border-color:rgba(155,126,248,.2);">
+            <div class="conv-header" style="color:var(--purple);">ARC — 68% EARLY</div>
+            <div class="conv-body">Agents narrative building. Watch $0.048-0.050. Small position only — sector still in early formation. No leverage.</div>
           </div>
         </div>
       </div>
       <div class="panel">
         <div class="panel-title">
-          <span>📐 ASCENDING TRIANGLE SCANNER — 15M</span>
+          <span class="panel-title-main">📐 ASCENDING TRIANGLE SCANNER — 15M</span>
           <button class="action-btn" onclick="runPhantomScan()" id="scan-btn" style="background:var(--purple);color:#fff;">SCAN NOW</button>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Criteria: Flat resistance 3+ touches ±0.4% · Rising lows · Volume ≥1.4× avg · 15m close above = CONFIRMED</div>
-        <div id="phantom-scan-status" style="font-size:11px;color:var(--muted);padding:8px;background:var(--surface2);border-radius:6px;margin-bottom:8px;">Hit SCAN NOW to analyse all triangle watch symbols on live Bybit 15m candles.</div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:8px;">Criteria: Flat resistance 3+ touches ±0.4% · Rising lows · Volume ≥1.4× avg · 15m close above = CONFIRMED</div>
+        <div id="phantom-scan-status" style="font-size:10px;color:var(--muted);padding:8px;background:var(--surface2);border-radius:6px;margin-bottom:8px;">Hit SCAN NOW to analyse all triangle watch symbols on live Bybit 15m candles.</div>
         <div id="phantom-triangles"></div>
       </div>
       <div class="panel">
-        <div class="panel-title">🧠 GCR Contrarian Filter</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--muted);line-height:1.7;">
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--green);">
-            <div style="color:var(--green);font-weight:700;margin-bottom:4px;">GCR LONG SIGNAL</div>
+        <div class="panel-title"><span class="panel-title-main">🧠 GCR Contrarian Filter</span></div>
+        <div class="rule-grid">
+          <div class="rule-card" style="border-left:3px solid var(--green)"><div class="rule-title" style="color:var(--green)">GCR LONG SIGNAL</div>
             Sentiment LOW (&lt;65%) + solid fundamentals<br>Funding NEGATIVE (crowd short + wrong)<br>Mentions BELOW daily average<br>F&G below 40 · Token flat on green day</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--red);">
-            <div style="color:var(--red);font-weight:700;margin-bottom:4px;">GCR SHORT SIGNAL</div>
+          <div class="rule-card" style="border-left:3px solid var(--red)"><div class="rule-title" style="color:var(--red)">GCR SHORT SIGNAL</div>
             Sentiment at ALL-TIME HIGH<br>Funding HIGHLY POSITIVE (crowd overlong)<br>Mentions 2×+ above daily average<br>F&G above 75 · Founder overconfident</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--accent);">
-            <div style="color:var(--accent);font-weight:700;margin-bottom:4px;">HOWRIE RULES</div>
-            Blue band + RSI>50 = HOLD LONGS<br>Red band = EXIT IMMEDIATELY<br>Green triangle = momentum (not warning)<br>Multiple red triangles oversold = BUY</div>
-          <div style="background:var(--surface2);padding:10px;border-radius:8px;border-left:3px solid var(--amber);">
-            <div style="color:var(--amber);font-weight:700;margin-bottom:4px;">PATTERN RULES</div>
+          <div class="rule-card" style="border-left:3px solid var(--accent)"><div class="rule-title" style="color:var(--accent)">HOWRIE RULES</div>
+            Blue band + RSI&gt;50 = HOLD LONGS<br>Red band = EXIT IMMEDIATELY<br>Green triangle = momentum confirmation<br>Multiple red triangles = capitulation = BUY</div>
+          <div class="rule-card" style="border-left:3px solid var(--amber)"><div class="rule-title" style="color:var(--amber)">PATTERN RULES</div>
             Bear flag = triangle after strong DROP<br>Always check 1H before 15m entry<br>Volume must spike on breakout candle<br>Neckline retest = best short entry</div>
         </div>
       </div>
@@ -381,40 +478,47 @@ header{height:44px;background:var(--surface);border-bottom:1px solid var(--borde
   </div>
 </div>
 
+<!-- CHAT BAR -->
 <div class="chat-bar">
-  <input class="chat-input" id="chat-input" placeholder="Ask the agents anything — token, pattern, position, macro...">
-  <button class="chat-send" id="chat-send">&#8593;</button>
+  <button class="chat-toggle-btn" id="chat-toggle-btn" onclick="toggleChat()" title="Toggle agent chat">💬</button>
+  <input class="chat-input" id="chat-input" placeholder="Ask the agents — token, pattern, position, macro, Howrie...">
+  <button class="chat-send" id="chat-send" onclick="sendChat()">SEND ↑</button>
 </div>
 
+<!-- CHAT PANEL -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
-    <span>⚡ AGENT CHANNEL — QUANT-OPS v2.4</span>
-    <span class="chat-close" id="chat-close">&#10005;</span>
+    <span>⚡ AGENT CHANNEL — QUANT-OPS v2.5</span>
+    <span class="chat-close" id="chat-close" onclick="toggleChat()">✕</span>
   </div>
   <div class="chat-msgs" id="chat-msgs">
     <div class="msg msg-agent">
       <div class="msg-name" style="color:var(--accent)">COORDINATOR</div>
-      All 5 agents online. HYDRA · CIPHER · ORACLE · NEXUS · PHANTOM. Ask about any token, position, pattern, or macro condition.
+      All 5 agents online — GCR framework loaded. HYDRA · CIPHER · ORACLE · NEXUS · PHANTOM. Ask about any token, position, pattern, macro condition, or Howrie signal.
+    </div>
+    <div class="msg msg-agent">
+      <div class="msg-name" style="color:var(--purple)">CIPHER</div>
+      Agent intelligence v2 active. Cross-pollination rules live: CIPHER whale intel → PHANTOM conviction · ORACLE macro → HYDRA sizing · NEXUS rotation → CIPHER timing.
     </div>
   </div>
 </div>
 
 <script>
-// ── NAVIGATION ──
-function sv(id, el) {
-  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
-  var target = document.getElementById('view-' + id);
-  if (target) { target.classList.add('active'); }
-  document.querySelectorAll('.sb-item').forEach(function(i) { i.classList.remove('active'); });
-  if (el && el.classList) { el.classList.add('active'); }
+// ── NAVIGATION (FIXED) ──
+function sv(viewId, navId) {
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  var target = document.getElementById('view-' + viewId);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});
+  var navEl = document.getElementById(navId);
+  if(navEl) navEl.classList.add('active');
 }
 
 // ── CONFIG ──
-var CONFIG = { BYBIT_KEY: 'irg4WOqoPdOJoMos3u', BYBIT_SECRET: 'Q87UAgAHmg78jO0Fa2kC0Mvt4QR7f2nSuRwU', USE_PRIVATE: true };
 var BB = 'https://api.bybit.com';
 var FG_API = 'https://api.alternative.me/fng/?limit=1';
 var LC_API = 'https://lunarcrush.com/api4/public';
-var LIVE = { t: {}, f: {}, fg: [], tri: [] };
+var LIVE = {t:{}, f:{}, fg:[], tri:[]};
 
 // ── WATCHLIST ──
 var WL = [
@@ -433,11 +537,11 @@ var WL = [
 var CIPHER_DATA = [
   {sym:'TAOUSDT',  label:'TAO',     rev:'$43.2M', note:'#1 by 15x · Jensen Huang endorsed'},
   {sym:'VIRTUALUSDT',label:'VIRTUAL',rev:'$2.87M', note:'200+ agents on Base'},
-  {sym:'LINKUSDT', label:'LINK',    rev:'$2.1M',  note:'Oracle monopoly · CCIP'},
-  {sym:'RENDERUSDT',label:'RENDER', rev:'$1.2M',  note:'Apple pipeline · IO.net'},
-  {sym:'IOUSDT',   label:'IO',      rev:'$0.9M',  note:'327K GPUs · 70% < AWS'},
-  {sym:'AKTUSDT',  label:'AKT',     rev:'$0.74M', note:'85% < AWS · AI +300% QoQ'},
-  {sym:'FETUSDT',  label:'FET',     rev:'$0.6M',  note:'ASI alliance'},
+  {sym:'LINKUSDT', label:'LINK',    rev:'$2.1M',  note:'Oracle monopoly · CCIP growing'},
+  {sym:'RENDERUSDT',label:'RENDER', rev:'$1.2M',  note:'Apple pipeline · IO.net synergy'},
+  {sym:'IOUSDT',   label:'IO',      rev:'$0.9M',  note:'327K GPUs · 70% cheaper than AWS'},
+  {sym:'AKTUSDT',  label:'AKT',     rev:'$0.74M', note:'85% cheaper AWS · AI +300% QoQ'},
+  {sym:'FETUSDT',  label:'FET',     rev:'$0.6M',  note:'ASI alliance active'},
   {sym:'NMRUSDT',  label:'NMR',     rev:'$0.4M',  note:'AI hedge fund · deflationary'},
   {sym:'ICPUSDT',  label:'ICP',     rev:'$0.3M',  note:'Full dApps on-chain'},
   {sym:'NEARUSDT', label:'NEAR',    rev:'$0.15M', note:'AI-native L1'}
@@ -448,48 +552,137 @@ var TRIANGLE_WATCH = ['BTCUSDT','ETHUSDT','TAOUSDT','RENDERUSDT','BIOUSDT','ARCU
 // ── HELPERS ──
 function fp(p) {
   p = parseFloat(p || 0);
-  if (!p) return '--';
-  if (p < 0.001) return '$' + p.toFixed(6);
-  if (p < 0.1) return '$' + p.toFixed(4);
-  if (p < 10) return '$' + p.toFixed(3);
-  if (p < 1000) return '$' + p.toFixed(2);
+  if(!p) return '--';
+  if(p < 0.001) return '$' + p.toFixed(6);
+  if(p < 0.1) return '$' + p.toFixed(4);
+  if(p < 10) return '$' + p.toFixed(3);
+  if(p < 1000) return '$' + p.toFixed(2);
   return '$' + p.toLocaleString('en-US', {maximumFractionDigits:0});
 }
 
+// ── FETCH WITH PROXY (MULTI-FALLBACK) ──
 function fetchWT(url, ms) {
   ms = ms || 8000;
-  var proxies = ['https://corsproxy.io/?'+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+  var encoded = encodeURIComponent(url);
+  var proxies = [
+    'https://corsproxy.io/?url=' + encoded,
+    'https://api.allorigins.win/raw?url=' + encoded,
+    'https://api.codetabs.com/v1/proxy?quest=' + encoded,
+    'https://thingproxy.freeboard.io/fetch/' + url
+  ];
   function tryP(idx) {
-    if (idx >= proxies.length) return Promise.resolve({});
+    if(idx >= proxies.length) return Promise.resolve({});
     var ctrl = new AbortController();
-    var t = setTimeout(function(){ctrl.abort();},ms);
-    return fetch(proxies[idx],{signal:ctrl.signal}).then(function(r){clearTimeout(t);return r.json();}).catch(function(){return tryP(idx+1);});
+    var t = setTimeout(function(){ctrl.abort();}, ms);
+    return fetch(proxies[idx], {signal: ctrl.signal})
+      .then(function(r){
+        clearTimeout(t);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      })
+      .catch(function(){clearTimeout(t); return tryP(idx + 1);});
   }
   return tryP(0);
 }
 
-// ── BYBIT CALLS ──
+// ── WEBSOCKET LIVE PRICES (bypasses CORS entirely) ──
+var ws = null;
+var wsConnected = false;
+var wsSyms = ['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','RENDERUSDT','AKTUSDT',
+              'NEARUSDT','ICPUSDT','GRTUSDT','NMRUSDT','IOUSDT','BIOUSDT',
+              'ARCUSDT','FETUSDT','HYPEUSDT','XRPUSDT','DOGEUSDT','VIRTUALUSDT',
+              'LINKUSDT','RIVERUSDT','STRKUSDT','ONDOUSDT'];
+
+function startWS() {
+  try {
+    ws = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+    ws.onopen = function() {
+      wsConnected = true;
+      var subs = wsSyms.map(function(s){return 'tickers.'+s;});
+      ws.send(JSON.stringify({op:'subscribe', args:subs}));
+      document.getElementById('hdr-dom').textContent = 'WS LIVE';
+      document.getElementById('hdr-dom').style.color = 'var(--green)';
+    };
+    ws.onmessage = function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        if(d.topic && d.topic.startsWith('tickers.') && d.data) {
+          var sym = d.topic.replace('tickers.','');
+          var td = d.data;
+          // Merge into LIVE.t format
+          if(!LIVE.t[sym]) LIVE.t[sym] = {};
+          if(td.lastPrice) LIVE.t[sym].lastPrice = td.lastPrice;
+          if(td.price24hPcnt) LIVE.t[sym].price24hPcnt = td.price24hPcnt;
+          if(td.highPrice24h) LIVE.t[sym].highPrice24h = td.highPrice24h;
+          if(td.lowPrice24h) LIVE.t[sym].lowPrice24h = td.lowPrice24h;
+          if(td.volume24h) LIVE.t[sym].volume24h = td.volume24h;
+          if(td.fundingRate) {
+            var rate = parseFloat(td.fundingRate);
+            LIVE.f[sym] = {cur:rate, pct:(rate*100).toFixed(4)+'%', sig:rate<-0.01?'SQUEEZE':rate<0?'SLIGHT_BEAR':rate>0.03?'LONGS_HEAVY':'NEUTRAL'};
+          }
+          // Live render ticker + hydra on BTC update
+          if(sym === 'BTCUSDT') { renderTicker(); renderHydra(); }
+          if(wsSyms.indexOf(sym) % 5 === 0) { renderWatchlist(); renderNexus(); renderCipher(); }
+        }
+      } catch(err){}
+    };
+    ws.onerror = function() { wsConnected = false; };
+    ws.onclose = function() {
+      wsConnected = false;
+      document.getElementById('hdr-dom').textContent = '~54%';
+      document.getElementById('hdr-dom').style.color = '';
+      // Reconnect after 5s
+      setTimeout(startWS, 5000);
+    };
+  } catch(err) { wsConnected = false; }
+}
+
+// ── BYBIT REST CALLS (fallback when WS not ready) ──
 function fetchTickers() {
-  return fetchWT(BB+'/v5/market/tickers?category=linear').then(function(j){
-    var list=(j.result&&j.result.list)?j.result.list:[];
-    list.forEach(function(t){LIVE.t[t.symbol]=t;});
-  }).catch(function(){});
+  // Try direct Bybit first (works in many regions), then proxy fallback
+  var url = BB + '/v5/market/tickers?category=linear';
+  return fetch(url, {signal: (function(){var c=new AbortController();setTimeout(function(){c.abort();},5000);return c.signal;})()})
+    .then(function(r){return r.json();})
+    .catch(function(){return fetchWT(url);})
+    .then(function(j){
+      var list = (j.result && j.result.list) ? j.result.list : [];
+      list.forEach(function(t){LIVE.t[t.symbol] = t;});
+      if(list.length > 0) {
+        document.getElementById('hdr-dom').textContent = list.length+' SYM';
+      }
+    }).catch(function(){});
 }
 
 function fetchFunding(sym) {
-  return fetchWT(BB+'/v5/market/funding/history?category=linear&symbol='+sym+'&limit=1').then(function(j){
-    var list=(j.result&&j.result.list)?j.result.list:[];
-    if(list.length){var rate=parseFloat(list[0].fundingRate||0);LIVE.f[sym]={cur:rate,pct:(rate*100).toFixed(4)+'%',sig:rate<-0.01?'SQUEEZE':rate<0?'SLIGHT_BEAR':rate>0.03?'LONGS_HEAVY':'NEUTRAL'};}
-  }).catch(function(){});
+  var url = BB + '/v5/market/funding/history?category=linear&symbol=' + sym + '&limit=1';
+  function process(j) {
+    var list = (j.result && j.result.list) ? j.result.list : [];
+    if(list.length){
+      var rate = parseFloat(list[0].fundingRate || 0);
+      LIVE.f[sym] = {cur: rate, pct: (rate*100).toFixed(4)+'%', sig: rate<-0.01?'SQUEEZE':rate<0?'SLIGHT_BEAR':rate>0.03?'LONGS_HEAVY':'NEUTRAL'};
+    }
+  }
+  return fetch(url, {signal:(function(){var c=new AbortController();setTimeout(function(){c.abort();},5000);return c.signal;})()})
+    .then(function(r){return r.json();}).then(process)
+    .catch(function(){return fetchWT(url).then(process).catch(function(){});});
 }
 
 function fetchFG() {
-  return fetchWT(FG_API).then(function(j){if(j.data&&j.data.length){LIVE.fg=j.data;}}).catch(function(){});
+  return fetch(FG_API, {signal:(function(){var c=new AbortController();setTimeout(function(){c.abort();},5000);return c.signal;})()})
+    .then(function(r){return r.json();})
+    .then(function(j){if(j.data&&j.data.length) LIVE.fg=j.data;})
+    .catch(function(){
+      return fetchWT(FG_API).then(function(j){if(j.data&&j.data.length) LIVE.fg=j.data;}).catch(function(){});
+    });
 }
 
 function fetchCandles(sym) {
-  return fetchWT(BB+'/v5/market/kline?category=linear&symbol='+sym+'&interval=15&limit=50',10000).then(function(j){
-    if(j.result&&j.result.list){return j.result.list.reverse().map(function(c){return{t:parseInt(c[0]),o:parseFloat(c[1]),h:parseFloat(c[2]),l:parseFloat(c[3]),c:parseFloat(c[4]),v:parseFloat(c[5])};});}
+  return fetchWT(BB + '/v5/market/kline?category=linear&symbol=' + sym + '&interval=15&limit=50', 10000).then(function(j){
+    if(j.result && j.result.list){
+      return j.result.list.reverse().map(function(c){
+        return {t:parseInt(c[0]),o:parseFloat(c[1]),h:parseFloat(c[2]),l:parseFloat(c[3]),c:parseFloat(c[4]),v:parseFloat(c[5])};
+      });
+    }
     return [];
   }).catch(function(){return [];});
 }
@@ -502,34 +695,28 @@ function fetchAltRank() {
   btn.textContent = 'LOADING...'; btn.disabled = true;
   status.style.color = 'var(--accent)';
   status.textContent = 'Fetching LunarCrush AltRank momentum leaders...';
-
   var watchSymbols = ['TAO','SOL','AKT','RENDER','VIRTUAL','NEAR','LINK','NMR','ICP','HYPE','BIO','ARC','SIREN','JUP'];
-
-  fetch(LC_API+'/list/cryptocurrencies/altrank/v1?limit=50', {
-    headers: {'Authorization': 'Bearer ' + (window.LC_KEY||'')}
+  fetch(LC_API + '/list/cryptocurrencies/altrank/v1?limit=50', {
+    headers: {'Authorization': 'Bearer ' + (window.LC_KEY || '')}
   })
   .then(function(r){return r.json();})
   .then(function(data){
     btn.textContent = 'SCAN SOCIAL'; btn.disabled = false;
-    if(!data||!data.data){status.textContent='AltRank data unavailable.';return;}
+    if(!data || !data.data){renderAltRankFallback(status, results); return;}
     var items = data.data.slice(0,20);
     var watchHits = items.filter(function(item){
       var sym = (item.symbol||'').toUpperCase();
       return watchSymbols.some(function(w){return sym.includes(w)||w.includes(sym);});
     });
-
     status.style.color = 'var(--green)';
-    status.textContent = 'AltRank loaded · ' + items.length + ' tokens · ' + watchHits.length + ' watchlist matches in top 20 · ' + new Date().toUTCString().slice(17,25) + ' UTC';
-
+    status.textContent = 'AltRank loaded · '+items.length+' tokens · '+watchHits.length+' watchlist matches · '+new Date().toUTCString().slice(17,25)+' UTC';
     var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
     items.slice(0,12).forEach(function(item,i){
       var sym = (item.symbol||item.name||'?').toUpperCase();
       var isWatch = watchSymbols.some(function(w){return sym.includes(w)||w.includes(sym);});
-      var border = isWatch ? '2px solid var(--green)' : '1px solid var(--border)';
-      var nameCol = isWatch ? 'var(--green)' : 'var(--text)';
-      html += '<div style="background:var(--surface2);border-radius:6px;padding:8px;border:'+border+';text-align:center;">';
-      html += '<div style="font-size:9px;color:var(--muted);">#'+(i+1)+'</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:'+nameCol+';">'+sym+'</div>';
+      html += '<div style="background:var(--surface2);border-radius:6px;padding:8px;border:'+(isWatch?'2px solid var(--green)':'1px solid var(--border)')+';text-align:center;">';
+      html += '<div style="font-size:8px;color:var(--muted);">#'+(i+1)+'</div>';
+      html += '<div style="font-size:10px;font-weight:700;color:'+(isWatch?'var(--green)':'var(--text)')+';">'+sym+'</div>';
       if(isWatch) html += '<div style="font-size:8px;color:var(--green);margin-top:2px;">WATCHLIST ✓</div>';
       html += '</div>';
     });
@@ -540,39 +727,40 @@ function fetchAltRank() {
   })
   .catch(function(){
     btn.textContent = 'SCAN SOCIAL'; btn.disabled = false;
-    // Fallback with known live data from this session
-    status.style.color = 'var(--amber)';
-    status.textContent = 'Live AltRank (session data) · SIREN #1 · TAO #10 · SOL #20 · JUP #17';
-    var fallback = [
-      {sym:'SIREN',rank:1,watch:false},{sym:'SHIB',rank:3,watch:false},
-      {sym:'PENGU',rank:4,watch:false},{sym:'PEPE',rank:6,watch:false},
-      {sym:'BTC',rank:7,watch:true},{sym:'HBAR',rank:9,watch:false},
-      {sym:'TAO',rank:10,watch:true},{sym:'BONK',rank:12,watch:false},
-      {sym:'SUI',rank:14,watch:false},{sym:'LINK',rank:15,watch:true},
-      {sym:'JUP',rank:17,watch:false},{sym:'SOL',rank:20,watch:true}
-    ];
-    var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
-    fallback.forEach(function(item){
-      var border = item.watch ? '2px solid var(--green)' : '1px solid var(--border)';
-      var nameCol = item.watch ? 'var(--green)' : 'var(--text)';
-      html += '<div style="background:var(--surface2);border-radius:6px;padding:8px;border:'+border+';text-align:center;">';
-      html += '<div style="font-size:9px;color:var(--muted);">#'+item.rank+'</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:'+nameCol+';">'+item.sym+'</div>';
-      if(item.watch) html += '<div style="font-size:8px;color:var(--green);margin-top:2px;">WATCHLIST ✓</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-    results.innerHTML = html;
+    renderAltRankFallback(status, results);
   });
+}
+
+function renderAltRankFallback(status, results) {
+  status.style.color = 'var(--amber)';
+  status.textContent = 'Live AltRank (session data) · SIREN #1 · TAO #10 · SOL #20 · JUP #17';
+  var fallback = [
+    {sym:'SIREN',rank:1,watch:false},{sym:'SHIB',rank:3,watch:false},
+    {sym:'PENGU',rank:4,watch:false},{sym:'PEPE',rank:6,watch:false},
+    {sym:'BTC',rank:7,watch:true},{sym:'HBAR',rank:9,watch:false},
+    {sym:'TAO',rank:10,watch:true},{sym:'BONK',rank:12,watch:false},
+    {sym:'SUI',rank:14,watch:false},{sym:'LINK',rank:15,watch:true},
+    {sym:'JUP',rank:17,watch:false},{sym:'SOL',rank:20,watch:true}
+  ];
+  var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
+  fallback.forEach(function(item){
+    html += '<div style="background:var(--surface2);border-radius:6px;padding:8px;border:'+(item.watch?'2px solid var(--green)':'1px solid var(--border)')+';text-align:center;">';
+    html += '<div style="font-size:8px;color:var(--muted);">#'+item.rank+'</div>';
+    html += '<div style="font-size:10px;font-weight:700;color:'+(item.watch?'var(--green)':'var(--text)')+';">'+item.sym+'</div>';
+    if(item.watch) html += '<div style="font-size:8px;color:var(--green);margin-top:2px;">WATCHLIST ✓</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  results.innerHTML = html;
 }
 
 // ── LUNARCRUSH WHATSUP ──
 var WHATSUP_TOKENS = [
-  {topic:'bittensor', label:'TAO'},
-  {topic:'solana', label:'SOL'},
-  {topic:'akash network', label:'AKT'},
-  {topic:'render', label:'RNDR'},
-  {topic:'near protocol', label:'NEAR'}
+  {topic:'bittensor',label:'TAO'},
+  {topic:'solana',label:'SOL'},
+  {topic:'akash network',label:'AKT'},
+  {topic:'render',label:'RNDR'},
+  {topic:'near protocol',label:'NEAR'}
 ];
 var whatsupIdx = 0;
 
@@ -580,26 +768,22 @@ function fetchWhatsUp() {
   var btn = document.getElementById('whatsup-btn');
   var results = document.getElementById('whatsup-results');
   btn.textContent = 'SCANNING...'; btn.disabled = true;
-  results.innerHTML = '<div style="font-size:11px;color:var(--accent);padding:8px;">Fetching LunarCrush social intelligence...</div>';
+  results.innerHTML = '<div style="font-size:10px;color:var(--accent);padding:8px;">Fetching LunarCrush social intelligence...</div>';
   whatsupIdx = 0;
   var allCards = [];
-
   function fetchNext() {
-    if(whatsupIdx >= WHATSUP_TOKENS.length) {
+    if(whatsupIdx >= WHATSUP_TOKENS.length){
       btn.textContent = 'SOCIAL SCAN'; btn.disabled = false;
       renderWhatsUp(allCards);
       return;
     }
-    var token = WHATSUP_TOKENS[whatsupIdx];
-    whatsupIdx++;
-    fetch(LC_API+'/topic/'+encodeURIComponent(token.topic)+'/whatsup/v1', {
-      headers:{'Authorization':'Bearer '+(window.LC_KEY||'')}
+    var token = WHATSUP_TOKENS[whatsupIdx++];
+    fetch(LC_API + '/topic/' + encodeURIComponent(token.topic) + '/whatsup/v1', {
+      headers: {'Authorization': 'Bearer ' + (window.LC_KEY || '')}
     })
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data&&data.summary){
-        allCards.push({label:token.label, summary:data.summary, supportive:data.supportive||[], critical:data.critical||[]});
-      }
+      if(data && data.summary) allCards.push({label:token.label, summary:data.summary, supportive:data.supportive||[], critical:data.critical||[]});
       setTimeout(fetchNext, 400);
     })
     .catch(function(){setTimeout(fetchNext, 400);});
@@ -610,82 +794,69 @@ function fetchWhatsUp() {
 function renderWhatsUp(cards) {
   var results = document.getElementById('whatsup-results');
   if(!cards.length){results.innerHTML='';return;}
-  var html = '<div style="margin-bottom:10px;">';
+  var html = '';
   cards.forEach(function(card){
     html += '<div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--border);">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px;">'+card.label+' — LUNARCRUSH WHATSUP</div>';
-    html += '<div style="font-size:11px;color:var(--text);line-height:1.5;margin-bottom:6px;">'+card.summary+'</div>';
+    html += '<div style="font-size:9px;font-weight:700;color:var(--purple);margin-bottom:4px;">'+card.label+' — LUNARCRUSH WHATSUP</div>';
+    html += '<div style="font-size:10px;color:var(--text);line-height:1.5;margin-bottom:6px;">'+card.summary+'</div>';
     if(card.supportive.length){
       html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
       card.supportive.slice(0,2).forEach(function(s){
-        html += '<span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(0,232,122,.1);color:var(--green);border:1px solid var(--green)">🟢 '+s.title+' ('+s.percent+'%)</span>';
+        html += '<span style="font-size:8px;padding:2px 7px;border-radius:4px;background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,122,.2)">🟢 '+s.title+' ('+s.percent+'%)</span>';
       });
       if(card.critical.length) card.critical.slice(0,1).forEach(function(c){
-        html += '<span style="font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(255,69,96,.1);color:var(--red);border:1px solid var(--red)">🔴 '+c.title+' ('+c.percent+'%)</span>';
+        html += '<span style="font-size:8px;padding:2px 7px;border-radius:4px;background:var(--red-dim);color:var(--red);border:1px solid rgba(255,61,90,.2)">🔴 '+c.title+' ('+c.percent+'%)</span>';
       });
       html += '</div>';
     }
     html += '</div>';
   });
-  html += '</div>';
   results.innerHTML = html;
 }
 
-// ── ORACLE MACRO NEWS (Claude API powered) ──
+// ── ORACLE MACRO NEWS (Claude API) ──
 var MACRO_BULL = ['rate cut','fed pivot','dollar weak','dxy down','risk-on','btc etf','etf inflow','accumulation','bullish','rally','breakout','surge','ath','inflow','institutional','approved','adoption'];
 var MACRO_BEAR = ['rate hike','inflation','war','geopolit','dollar rise','dxy','risk-off','sell-off','crash','fed hike','outflow','bearish','recession','oil spike','dump','breakdown','liquidat','ban','crackdown','fear','sanction','plunge'];
-
-function scoreMacro(title) {
-  var t = title.toLowerCase();
-  var b = MACRO_BULL.filter(function(k){return t.includes(k);}).length;
-  var r = MACRO_BEAR.filter(function(k){return t.includes(k);}).length;
-  if(r>b) return {label:'BEARISH',col:'var(--red)',bg:'rgba(255,69,96,.1)'};
-  if(b>r) return {label:'BULLISH',col:'var(--green)',bg:'rgba(0,232,122,.1)'};
-  return {label:'NEUTRAL',col:'var(--muted)',bg:'rgba(255,255,255,.04)'};
-}
 
 function fetchMacroNews() {
   var btn = document.getElementById('macro-btn');
   var status = document.getElementById('macro-status');
   status.style.display='block'; status.style.color='var(--accent)';
-  status.textContent='ORACLE generating macro intelligence...';
+  status.textContent='ORACLE generating macro intelligence via Claude API...';
   btn.textContent='FETCHING...'; btn.disabled=true;
   document.getElementById('macro-headlines').innerHTML='';
-
-  var prompt = 'You are ORACLE, macro intelligence agent for a crypto trading system. Today is '+new Date().toUTCString().slice(0,16)+'. Generate 10 current crypto macro news headlines. Return ONLY a JSON array, no markdown: [{"source":"CoinDesk","title":"...","desc":"one sentence","signal":"BULLISH or BEARISH or NEUTRAL"}]. Cover: BTC price action, Fed/rates, Iran war impact, institutional moves, DXY, Fear & Greed. Be specific with numbers.';
-
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+  var prompt = 'You are ORACLE, macro intelligence agent for a crypto trading system (GCR framework — contrarian, data-driven, anti-herd). Today is '+new Date().toUTCString().slice(0,16)+'. Generate 10 current crypto macro news headlines. Return ONLY a JSON array with no markdown fences: [{"source":"CoinDesk","title":"...","desc":"one sentence","signal":"BULLISH or BEARISH or NEUTRAL"}]. Cover: BTC price action, Fed/rates (50% rate hike bets), Iran war impact, institutional moves, DXY, Fear & Greed. Be specific with numbers.';
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:prompt}]})
   })
   .then(function(r){return r.json();})
   .then(function(data){
-    var text=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'';
-    text=text.replace(/```json|```/g,'').trim();
+    var text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+    text = text.replace(/```json|```/g,'').trim();
     var items; try{items=JSON.parse(text);}catch(e){items=[];}
-    if(Array.isArray(items)&&items.length>0){renderMacroNews(items,btn,status);}
-    else{renderMacroNews(getHardcodedMacro(),btn,status);}
+    renderMacroNews(Array.isArray(items)&&items.length>0?items:getHardcodedMacro(), btn, status);
   })
-  .catch(function(){renderMacroNews(getHardcodedMacro(),btn,status);});
+  .catch(function(){renderMacroNews(getHardcodedMacro(), btn, status);});
 }
 
 function getHardcodedMacro() {
   return [
-    {source:'LunarCrush',title:'TAO AltRank #10 — Jensen Huang endorses Bittensor decentralized AI training publicly',desc:'Social dominance 175% above average. Volume $367M. Institutional validation accelerating subnet flywheel.',signal:'BULLISH'},
+    {source:'LunarCrush',title:'TAO AltRank #10 — Jensen Huang publicly endorses Bittensor decentralized AI',desc:'Social dominance 175% above average. Volume $367M. Institutional validation accelerating subnet flywheel.',signal:'BULLISH'},
     {source:'LunarCrush',title:'SIREN AltRank #1 — smart money 20x trade confirmed by @lookonchain on-chain data',desc:'Trader 0x78c6 turned $101K into $2.09M in 2 months. Option-like accumulation structure.',signal:'BULLISH'},
-    {source:'Bloomberg',title:'Bond traders price 50% chance of Fed rate HIKE by October 2026 — no cuts expected',desc:'Iran war spending triggers inflation fears. Treasuries sink. Wall Street abandons rate cut bets.',signal:'BEARISH'},
-    {source:'Bloomberg',title:'US-Israel-Iran war enters week three — Trump seeks $200B from Congress as oil spikes',desc:'Energy infrastructure destroyed. $39T US debt. Kharg Island pivotal for global oil markets.',signal:'BEARISH'},
-    {source:'Nansen',title:'$30B of SOL natively staked now usable as collateral on Jupiter Lend via Nansen vaults',desc:'Largest idle capital pool on Solana unlocked into DeFi. New TVL and demand catalyst for SOL ecosystem.',signal:'BULLISH'},
-    {source:'LunarCrush',title:'BTC holds $68K support — geopolitical hedge narrative driving 78% sentiment despite price pressure',desc:'Institutional accumulation via ETFs ongoing. Strategy continues BTC purchases. Long-term thesis intact.',signal:'NEUTRAL'},
-    {source:'CoinDesk',title:'RESOLV USR stablecoin exploit — $50M attack causes depeg to $0.02, -1200% funding rate',desc:'Heavy shorting, panic selling, loss of confidence. Contagion spreading to Morpho vaults.',signal:'BEARISH'},
-    {source:'LunarCrush',title:'SOL AltRank #20 with $2.77B daily volume — Foundation president gaming comments weigh',desc:'Sentiment 72% vs 84% average. Jupiter integration bullish but Solana Foundation FUD continues.',signal:'NEUTRAL'},
-    {source:'Polymarket',title:'70% probability BTC drops below $55K — contrarian signal at extreme bearish sentiment',desc:'Crowd overwhelmingly bearish near-term. GCR framework: extreme crowd certainty = opposite outcome likely.',signal:'NEUTRAL'},
-    {source:'Bloomberg',title:'China silver imports hit 8-year high — solar manufacturing front-loading before April export rebate removal',desc:'Industrial demand surge. Risk-on commodity signals mixed with Iran geopolitical risk.',signal:'NEUTRAL'}
+    {source:'Bloomberg',title:'Bond traders price 50% chance of Fed rate HIKE by October 2026 — no cuts expected',desc:'Iran war spending triggers inflation fears. Treasuries sink. Wall Street abandons rate cut bets entirely.',signal:'BEARISH'},
+    {source:'Bloomberg',title:'US-Israel-Iran war enters week three — Trump seeks $200B from Congress as oil spikes',desc:'Energy infrastructure at risk. $39T US debt. Kharg Island pivotal for global oil supply.',signal:'BEARISH'},
+    {source:'Nansen',title:'$30B of SOL natively staked now usable as collateral on Jupiter Lend via Nansen vaults',desc:'Largest idle capital pool on Solana unlocked into DeFi. New TVL catalyst for SOL ecosystem.',signal:'BULLISH'},
+    {source:'CoinDesk',title:'BTC holds $68K support — geopolitical hedge narrative driving 78% sentiment',desc:'Institutional accumulation via ETFs ongoing. Strategy continues BTC purchases.',signal:'NEUTRAL'},
+    {source:'CoinDesk',title:'RESOLV USR stablecoin exploit — $50M attack causes depeg to $0.02',desc:'Heavy shorting, panic selling. Contagion spreading to Morpho vaults.',signal:'BEARISH'},
+    {source:'LunarCrush',title:'SOL AltRank #20 with $2.77B daily volume — Jupiter staked collateral catalyst',desc:'Sentiment 72% vs 84% average. Jupiter integration bullish but Foundation FUD continues.',signal:'NEUTRAL'},
+    {source:'Polymarket',title:'70% probability BTC drops below $55K — contrarian signal at extreme bearish sentiment',desc:'GCR framework: extreme crowd certainty = opposite outcome likely. Watch for reversal.',signal:'NEUTRAL'},
+    {source:'Bloomberg',title:'China silver imports hit 8-year high — solar manufacturing front-loading before April',desc:'Industrial demand surge. Risk-on commodity signals mixed with Iran geopolitical risk.',signal:'NEUTRAL'}
   ];
 }
 
-function renderMacroNews(items,btn,status) {
+function renderMacroNews(items, btn, status) {
   btn.textContent='FETCH MACRO'; btn.disabled=false;
   var hl = document.getElementById('macro-headlines');
   if(!items||!items.length){status.style.color='var(--amber)';status.textContent='Paste Bloomberg email below for ORACLE analysis.';return;}
@@ -694,16 +865,19 @@ function renderMacroNews(items,btn,status) {
   var bias=bear>bull?'🔴 BEARISH LEAN':bull>bear?'🟢 BULLISH LEAN':'🟡 NEUTRAL';
   status.style.color=bear>bull?'var(--red)':bull>bear?'var(--green)':'var(--amber)';
   status.textContent=items.length+' headlines · ORACLE: '+bias+' ('+bull+' bull / '+bear+' bear) · '+new Date().toUTCString().slice(17,25)+' UTC';
-  var colMap={BULLISH:{col:'var(--green)',bg:'rgba(0,232,122,.1)'},BEARISH:{col:'var(--red)',bg:'rgba(255,69,96,.1)'},NEUTRAL:{col:'var(--muted)',bg:'rgba(255,255,255,.04)'}};
+  var colMap={BULLISH:{col:'var(--green)',bg:'var(--green-dim)',border:'rgba(0,230,122,.15)'},BEARISH:{col:'var(--red)',bg:'var(--red-dim)',border:'rgba(255,61,90,.15)'},NEUTRAL:{col:'var(--muted)',bg:'rgba(255,255,255,.02)',border:'var(--border)'}};
   var html='';
   items.forEach(function(item){
     var sig=item.signal||'NEUTRAL'; var c=colMap[sig]||colMap.NEUTRAL;
-    html+='<div style="background:'+c.bg+';border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;margin-bottom:6px;">';
-    html+='<div style="display:flex;align-items:flex-start;gap:8px;"><div style="flex:1;">';
-    html+='<div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:3px;">'+item.source.toUpperCase()+'</div>';
-    html+='<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:4px;">'+item.title+'</div>';
-    if(item.desc) html+='<div style="font-size:10px;color:var(--muted);line-height:1.5;">'+item.desc+'</div>';
-    html+='</div><span style="flex-shrink:0;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;color:'+c.col+';border:1px solid '+c.col+';background:'+c.bg+'">'+sig+'</span></div></div>';
+    html+='<div class="macro-card" style="background:'+c.bg+';border-color:'+c.border+';">';
+    html+='<div class="macro-src">'+item.source.toUpperCase()+'</div>';
+    html+='<div style="display:flex;align-items:flex-start;gap:8px;">';
+    html+='<div style="flex:1;">';
+    html+='<div class="macro-title">'+item.title+'</div>';
+    if(item.desc) html+='<div class="macro-desc">'+item.desc+'</div>';
+    html+='</div>';
+    html+='<span style="flex-shrink:0;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;color:'+c.col+';border:1px solid '+c.col+';background:'+c.bg+'">'+sig+'</span>';
+    html+='</div></div>';
   });
   hl.innerHTML=html;
   document.getElementById('oracle-badge').textContent=bear>bull?'BEAR MACRO':bull>bear?'BULL MACRO':'NEUTRAL';
@@ -719,32 +893,36 @@ function clearMacroNews() {
 
 // ── BLOOMBERG ANALYSER ──
 function analyseBloomberg() {
-  var paste=document.getElementById('bloomberg-paste').value.trim();
-  var out=document.getElementById('bloomberg-analysis');
-  if(!paste){out.innerHTML='<div style="font-size:11px;color:var(--red)">Paste Bloomberg content first.</div>';return;}
-  var text=paste.toLowerCase(); var signals=[];
+  var paste = document.getElementById('bloomberg-paste').value.trim();
+  var out = document.getElementById('bloomberg-analysis');
+  if(!paste){out.innerHTML='<div style="font-size:10px;color:var(--red)">Paste Bloomberg content first.</div>';return;}
+  var text = paste.toLowerCase(); var signals = [];
   if(text.includes('rate hike')||text.includes('hike')) signals.push({icon:'🔴',label:'RATE HIKE RISK',detail:'Bond market pricing increases — headwind. Tighten stops on perps.',col:'var(--red)'});
   if(text.includes('rate cut')||text.includes('pivot')) signals.push({icon:'🟢',label:'RATE CUT SIGNAL',detail:'Fed easing expected — bullish for crypto.',col:'var(--green)'});
-  if(text.includes('war')||text.includes('iran')||text.includes('conflict')) signals.push({icon:'🔴',label:'GEOPOLITICAL RISK',detail:'Risk-off sentiment. Oil spike = inflation = rate pressure. Reduce leverage.',col:'var(--red)'});
+  if(text.includes('war')||text.includes('iran')) signals.push({icon:'🔴',label:'GEOPOLITICAL RISK',detail:'Risk-off sentiment. Oil spike = inflation = rate pressure. Reduce leverage.',col:'var(--red)'});
   if(text.includes('inflation')||text.includes('cpi')) signals.push({icon:'🔴',label:'INFLATION PRESSURE',detail:'Rising inflation = DXY strength = crypto headwind.',col:'var(--red)'});
   if(text.includes('oil')&&(text.includes('spike')||text.includes('surg'))) signals.push({icon:'🔴',label:'OIL SPIKE',detail:'Energy crisis = inflation spike = rate hike risk.',col:'var(--red)'});
   if(text.includes('dollar')&&(text.includes('weak')||text.includes('fall'))) signals.push({icon:'🟢',label:'DXY WEAKENING',detail:'Weak dollar = risk-on. Add long exposure on pullbacks.',col:'var(--green)'});
   if(text.includes('dollar')&&(text.includes('strong')||text.includes('ris'))) signals.push({icon:'🔴',label:'DXY STRENGTHENING',detail:'Strong dollar = crypto headwind. Wait for reversal.',col:'var(--red)'});
   if(text.includes('debt')||text.includes('trillion')) signals.push({icon:'🟡',label:'FISCAL CONCERN',detail:'Dollar debasement risk. BTC long-term bullish thesis intact.',col:'var(--amber)'});
-  if(!signals.length) signals.push({icon:'🟡',label:'NO STRONG SIGNALS',detail:'Paste more content or check manually.',col:'var(--muted)'});
+  if(!signals.length) signals.push({icon:'🟡',label:'NO STRONG SIGNALS',detail:'Paste more content for better signal extraction.',col:'var(--muted)'});
   var br=signals.filter(function(s){return s.col==='var(--red)';}).length;
   var bl=signals.filter(function(s){return s.col==='var(--green)';}).length;
   var bias=br>bl?'🔴 NET BEARISH — reduce leverage':bl>br?'🟢 NET BULLISH — risk-on':'🟡 MIXED — trade defensively';
   var biasCol=br>bl?'var(--red)':bl>br?'var(--green)':'var(--amber)';
   var html='<div style="background:var(--surface2);border-radius:8px;padding:12px;">';
-  html+='<div style="font-size:11px;font-weight:700;color:'+biasCol+';margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">ORACLE VERDICT: '+bias+'</div>';
-  signals.forEach(function(s){html+='<div style="margin-bottom:8px;padding:8px;background:var(--surface);border-radius:6px;border-left:3px solid '+s.col+'"><div style="font-size:10px;font-weight:700;color:'+s.col+';margin-bottom:3px;">'+s.icon+' '+s.label+'</div><div style="font-size:11px;color:var(--muted);">'+s.detail+'</div></div>';});
+  html+='<div style="font-size:10px;font-weight:700;color:'+biasCol+';margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">ORACLE VERDICT: '+bias+'</div>';
+  signals.forEach(function(s){
+    html+='<div style="margin-bottom:8px;padding:8px;background:var(--surface);border-radius:6px;border-left:3px solid '+s.col+'">';
+    html+='<div style="font-size:9px;font-weight:700;color:'+s.col+';margin-bottom:3px;">'+s.icon+' '+s.label+'</div>';
+    html+='<div style="font-size:10px;color:var(--muted);">'+s.detail+'</div></div>';
+  });
   html+='</div>';
   out.innerHTML=html;
   document.getElementById('bloomberg-paste').value='';
 }
 
-// ── PHANTOM SCANNER ──
+// ── PHANTOM TRIANGLE SCANNER ──
 function detectTriangle(sym, candles) {
   if(candles.length<20) return null;
   var recent=candles.slice(-30);
@@ -799,33 +977,36 @@ function runPhantomScan() {
   scanNext(0);
 }
 
-function renderPhantomResults(found,scanned) {
+function renderPhantomResults(found, scanned) {
   var status=document.getElementById('phantom-scan-status');
   var results=document.getElementById('phantom-triangles');
   LIVE.tri=found;
   status.style.color=found.length>0?'var(--green)':'var(--muted)';
   status.textContent='Scan complete: '+scanned+' symbols · '+found.length+' pattern(s) · '+new Date().toUTCString().slice(17,25)+' UTC';
-  if(!found.length){results.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">No ascending triangles detected. Market may be trending — wait for consolidation zones.</div>';return;}
+  if(!found.length){
+    results.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px;">No ascending triangles detected. Market may be trending — wait for consolidation zones.</div>';
+    return;
+  }
   found.sort(function(a,b){return b.score-a.score;});
   var html='';
   found.forEach(function(r){
     var bCol=r.breakout?'var(--green)':r.nearBreakout?'var(--amber)':'var(--muted)';
     var bLabel=r.breakout?'🚀 BREAKING OUT':r.nearBreakout?'⚡ NEAR BREAKOUT':'📐 FORMING';
-    var bBorder=r.breakout?'rgba(0,232,122,.4)':r.nearBreakout?'rgba(255,176,32,.4)':'rgba(255,255,255,.08)';
+    var bBorder=r.breakout?'rgba(0,230,122,.3)':r.nearBreakout?'rgba(245,166,35,.3)':'var(--border)';
     var dec=r.resistance<1?4:2;
-    html+='<div style="background:var(--surface2);border:1px solid '+bBorder+';border-radius:8px;padding:12px;margin-bottom:8px;">';
+    html+='<div class="tri-card" style="border:1px solid '+bBorder+';">';
     html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
-    html+='<span style="font-size:14px;font-weight:700;font-family:monospace;color:var(--text)">'+r.sym+'</span>';
-    html+='<span style="font-size:11px;font-weight:700;color:'+bCol+'">'+bLabel+'</span>';
-    html+='<span style="font-size:10px;background:rgba(167,139,250,.15);color:var(--purple);padding:2px 8px;border-radius:4px;font-weight:700;">SCORE '+r.score+'</span></div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:10px;margin-bottom:8px;">';
-    html+='<div style="background:var(--surface);padding:6px;border-radius:6px;"><div style="color:var(--muted)">RESISTANCE</div><div style="font-family:monospace;font-weight:700;">$'+r.resistance.toFixed(dec)+'</div></div>';
-    html+='<div style="background:var(--surface);padding:6px;border-radius:6px;"><div style="color:var(--muted)">LAST CLOSE</div><div style="font-family:monospace;font-weight:700;">$'+r.lastClose.toFixed(dec)+'</div></div>';
-    html+='<div style="background:var(--surface);padding:6px;border-radius:6px;"><div style="color:var(--muted)">TO RESIST</div><div style="font-family:monospace;font-weight:700;color:'+bCol+'">'+r.distToRes+'%</div></div></div>';
-    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:10px;">';
-    html+='<span style="padding:2px 8px;border-radius:4px;background:'+(r.flatRes?'rgba(0,232,122,.15)':'rgba(255,69,96,.1)')+';color:'+(r.flatRes?'var(--green)':'var(--red)')+'>'+(r.flatRes?'✓':'✗')+' FLAT RESISTANCE</span>';
-    html+='<span style="padding:2px 8px;border-radius:4px;background:'+(r.risingLows?'rgba(0,232,122,.15)':'rgba(255,69,96,.1)')+';color:'+(r.risingLows?'var(--green)':'var(--red)')+'>'+(r.risingLows?'✓':'✗')+' RISING LOWS</span>';
-    html+='<span style="padding:2px 8px;border-radius:4px;background:'+(r.volSpike?'rgba(0,232,122,.15)':'rgba(255,176,32,.1)')+';color:'+(r.volSpike?'var(--green)':'var(--amber)')+'>'+(r.volSpike?'✓':'~')+' VOL '+r.volRatio+'×</span>';
+    html+='<span style="font-size:13px;font-weight:700;color:var(--text)">'+r.sym+'</span>';
+    html+='<span style="font-size:10px;font-weight:700;color:'+bCol+'">'+bLabel+'</span>';
+    html+='<span style="font-size:9px;background:var(--purple-dim);color:var(--purple);padding:2px 8px;border-radius:4px;font-weight:700;">SCORE '+r.score+'</span></div>';
+    html+='<div class="tri-stats">';
+    html+='<div class="tri-stat"><div style="color:var(--muted)">RESISTANCE</div><div style="font-weight:700;">$'+r.resistance.toFixed(dec)+'</div></div>';
+    html+='<div class="tri-stat"><div style="color:var(--muted)">LAST CLOSE</div><div style="font-weight:700;">$'+r.lastClose.toFixed(dec)+'</div></div>';
+    html+='<div class="tri-stat"><div style="color:var(--muted)">TO RESIST</div><div style="font-weight:700;color:'+bCol+'">'+r.distToRes+'%</div></div></div>';
+    html+='<div class="tri-tags">';
+    html+='<span class="tri-tag" style="background:'+(r.flatRes?'var(--green-dim)':'var(--red-dim)')+';color:'+(r.flatRes?'var(--green)':'var(--red)')+'>'+(r.flatRes?'✓':'✗')+' FLAT RESIST</span>';
+    html+='<span class="tri-tag" style="background:'+(r.risingLows?'var(--green-dim)':'var(--red-dim)')+';color:'+(r.risingLows?'var(--green)':'var(--red)')+'>'+(r.risingLows?'✓':'✗')+' RISING LOWS</span>';
+    html+='<span class="tri-tag" style="background:'+(r.volSpike?'var(--green-dim)':'var(--amber-dim)')+';color:'+(r.volSpike?'var(--green)':'var(--amber)')+'>'+(r.volSpike?'✓':'~')+' VOL '+r.volRatio+'×</span>';
     html+='</div></div>';
   });
   results.innerHTML=html;
@@ -834,42 +1015,34 @@ function renderPhantomResults(found,scanned) {
   document.getElementById('ov-phantom-b').textContent=found.length>0?found.length+' SIGNAL':'WATCH';
 }
 
-// ── NEXUS CLUSTER PRICES ──
+// ── NEXUS CLUSTER RENDER ──
 function renderNexus() {
-  var clusters = {
-    gpu: ['AKTUSDT','RENDERUSDT','IOUSDT'],
-    ai: ['TAOUSDT','FETUSDT','NEARUSDT'],
-    data: ['GRTUSDT','LINKUSDT','ICPUSDT'],
-    agents: ['VIRTUALUSDT','ARCUSDT','NMRUSDT']
-  };
+  var clusters = {gpu:['AKTUSDT','RENDERUSDT','IOUSDT'],ai:['TAOUSDT','FETUSDT','NEARUSDT'],data:['GRTUSDT','LINKUSDT','ICPUSDT'],agents:['VIRTUALUSDT','ARCUSDT','NMRUSDT']};
   var lagCandidates = [];
-  Object.keys(clusters).forEach(function(key) {
-    var syms = clusters[key];
-    var changes = syms.map(function(s){var t=LIVE.t[s]||{};return parseFloat(t.price24hPcnt||0)*100;});
-    var avgChange = changes.reduce(function(a,b){return a+b;},0)/changes.length;
-    var html = syms.map(function(s,i){
-      var t=LIVE.t[s]||{};
-      var p=parseFloat(t.lastPrice||0);
-      var c=parseFloat(t.price24hPcnt||0)*100;
-      var cls=c>=0?'up':'dn';
+  var clusterMap = {gpu:'nx-gpu',ai:'nx-ai',data:'nx-data',agents:'nx-agents'};
+  Object.keys(clusters).forEach(function(key){
+    var syms=clusters[key];
+    var changes=syms.map(function(s){var t=LIVE.t[s]||{};return parseFloat(t.price24hPcnt||0)*100;});
+    var avgChange=changes.reduce(function(a,b){return a+b;},0)/changes.length;
+    var rows=syms.map(function(s,i){
+      var t=LIVE.t[s]||{};var p=parseFloat(t.lastPrice||0);var c=changes[i];
       var lbl=s.replace('USDT','');
       if(avgChange>1&&c<0) lagCandidates.push({sym:lbl,sectorAvg:avgChange.toFixed(2),chg:c.toFixed(2)});
-      return '<span style="font-family:monospace;">'+lbl+' '+(p?fp(p):'--')+'</span> <span class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(1)+'%':'')+'</span>';
+      return lbl+' '+(p?fp(p):'--')+' <span class="'+(c>=0?'up':'dn')+'">'+(p?(c>=0?'+':'')+c.toFixed(1)+'%':'')+'</span>';
     }).join('<br>');
-    var el = document.getElementById('nx-'+key==='gpu'?'gpu':key==='ai'?'ai':key==='data'?'data':'agents');
-    if(el) el.innerHTML = syms.map(function(s){return s.replace('USDT','');}).join(' · ')+'<br>'+html.replace(/undefined|NaN/g,'--');
+    var el=document.getElementById(clusterMap[key]);
+    if(el) el.innerHTML=syms.map(function(s){return s.replace('USDT','');}).join(' · ')+'<br>'+rows;
   });
-  var lagEl = document.getElementById('lag-results');
-  if(lagEl) {
+  var lagEl=document.getElementById('lag-results');
+  if(lagEl){
     if(!lagCandidates.length){lagEl.textContent='No lag trades detected — all sectors moving together.';}
     else{
-      var lh='<div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:8px;">LAG TRADE CANDIDATES — flat/red while sector is green:</div>';
+      var lh='<div style="font-size:9px;font-weight:700;color:var(--amber);margin-bottom:8px;letter-spacing:.08em;">LAG TRADE CANDIDATES — flat/red while sector is green:</div>';
       lagCandidates.forEach(function(c){
         lh+='<div style="background:var(--surface2);border-radius:6px;padding:8px;margin-bottom:6px;border-left:3px solid var(--amber);">';
-        lh+='<span style="font-family:monospace;font-weight:700;color:var(--text)">'+c.sym+'</span> ';
-        lh+='<span class="dn">'+c.chg+'%</span> while sector avg ';
-        lh+='<span class="up">+'+c.sectorAvg+'%</span> — check Howrie for entry';
-        lh+='</div>';
+        lh+='<span style="font-weight:700;color:var(--text)">'+c.sym+'</span> ';
+        lh+='<span class="dn">'+c.chg+'%</span> while sector avg <span class="up">+'+c.sectorAvg+'%</span>';
+        lh+=' — check Howrie for entry signal</div>';
       });
       lagEl.innerHTML=lh;
     }
@@ -883,19 +1056,20 @@ function renderTicker() {
   syms.forEach(function(s){
     var t=LIVE.t[s]||{};var p=parseFloat(t.lastPrice||0);var c=parseFloat(t.price24hPcnt||0)*100;
     var cls=c>=0?'up':'dn';var lbl=s.replace('USDT','');
-    html+='<span class="tick-item"><span class="tick-sym">'+lbl+'</span><span class="tick-p '+cls+'">'+(p?fp(p):'--')+'</span><span class="'+cls+'" style="font-size:10px">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'')+'</span></span>';
+    html+='<span class="tick-item"><span class="tick-sym">'+lbl+'</span><span class="'+cls+'">'+(p?fp(p):'--')+'</span><span class="'+cls+'" style="font-size:9px">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'')+'</span></span>';
   });
-  document.getElementById('ticker').innerHTML=html||'<span style="color:var(--muted);font-size:11px">Hit REFRESH to load prices</span>';
+  document.getElementById('ticker').innerHTML=html||'<span style="color:var(--muted);font-size:10px">Hit REFRESH to load prices</span>';
 }
 
 function renderFG() {
   var fg=LIVE.fg[0]; if(!fg) return;
   var val=parseInt(fg.value); var cls=fg.value_classification;
   var col=val<=25?'var(--red)':val<=45?'var(--amber)':val>=75?'var(--red)':'var(--green)';
-  ['fg-val','fg-cls'].forEach(function(id,i){var el=document.getElementById(id);if(el){el.textContent=i===0?val:cls;el.style.color=col;}});
+  var fgV=document.getElementById('fg-val'); if(fgV){fgV.textContent=val;fgV.style.color=col;}
+  var fgC=document.getElementById('fg-cls'); if(fgC){fgC.textContent=cls;fgC.style.color=col;}
   var dot=document.getElementById('fg-dot'); if(dot) dot.style.left=val+'%';
   var hfg=document.getElementById('hdr-fg'); if(hfg) hfg.textContent=val;
-  var ofg=document.getElementById('ov-fg'); if(ofg){ofg.textContent=val+' - '+cls;ofg.style.color=col;}
+  var ofg=document.getElementById('ov-fg'); if(ofg){ofg.textContent=val+' · '+cls;ofg.style.color=col;}
   var orfg=document.getElementById('or-fg'); if(orfg){orfg.textContent=val;orfg.style.color=col;}
   var orcl=document.getElementById('or-cls'); if(orcl){orcl.textContent=cls;orcl.style.color=col;}
   var thesis=val<=25?'EXTREME FEAR = accumulation zone. Buy quality, not memes.':val<=45?'FEAR zone. Smart money accumulating quietly.':val>=75?'GREED zone. Take profits. Trail stops. Reduce leverage.':'Neutral. Follow price action and Howrie signals.';
@@ -906,19 +1080,21 @@ function renderFG() {
 function renderHydra() {
   var bt=LIVE.t['BTCUSDT']||{}; var bf=LIVE.f['BTCUSDT']||{};
   var p=parseFloat(bt.lastPrice||0); var c=parseFloat(bt.price24hPcnt||0)*100; var rate=parseFloat(bf.cur||0);
-  var hbp=document.getElementById('h-btc-p'); if(hbp&&p){hbp.textContent=fp(p);hbp.style.color=c>=0?'var(--green)':'var(--red)';}
-  var hf=document.getElementById('h-funding'); if(hf&&bf.pct){hf.textContent=bf.pct;hf.style.color=rate<0?'var(--green)':rate>0.02?'var(--red)':'var(--amber)';}
+  var els={
+    'h-btc-p':{val:p?fp(p):'--',col:c>=0?'var(--green)':'var(--red)'},
+    'h-funding':{val:bf.pct||'--',col:rate<0?'var(--green)':rate>0.02?'var(--red)':'var(--amber)'},
+    'ov-btc':{val:p?fp(p):'--',col:'var(--accent)'},
+    'ov-funding':{val:bf.pct||'--',col:'var(--amber)'}
+  };
+  Object.keys(els).forEach(function(id){var el=document.getElementById(id);if(el){el.textContent=els[id].val;if(els[id].col)el.style.color=els[id].col;}});
   var sig=rate<-0.01?'LONG BIAS':rate>0.03?'SHORT RISK':'NEUTRAL';
   var sigCol=rate<-0.01?'var(--green)':rate>0.03?'var(--red)':'var(--amber)';
   var hs=document.getElementById('h-signal'); if(hs){hs.textContent=sig;hs.style.color=sigCol;}
   var hb=document.getElementById('hydra-badge'); if(hb){hb.textContent=sig;hb.className='sb-badge '+(rate<-0.01?'bull':rate>0.03?'bear':'watch');}
-  var ob=document.getElementById('ov-hydra-b'); if(ob) ob.textContent=sig;
-  var of2=document.getElementById('ov-funding'); if(of2) of2.textContent=bf.pct||'--';
-  var obtc=document.getElementById('ov-btc'); if(obtc) obtc.textContent=p?fp(p):'--';
-  var hbtcp=document.getElementById('h-btc-p'); if(hbtcp&&p) hbtcp.textContent=fp(p);
-  var thesis='BTC: '+fp(p)+' ('+(c>=0?'+':'')+c.toFixed(2)+'%). Funding: '+(bf.pct||'--')+' ['+(bf.sig||'--')+']. '+(rate<-0.01?'Negative funding = longs paid = squeeze potential. Bias LONG.':rate>0.03?'Elevated funding = longs overextended. Tighten stops.':'Neutral derivatives. Follow price action.');
+  document.getElementById('ov-hydra-b').textContent=sig;
+  var thesis='BTC: '+fp(p)+' ('+(c>=0?'+':'')+c.toFixed(2)+'%). Funding: '+(bf.pct||'--')+' ['+(bf.sig||'--')+']. '+(rate<-0.01?'Negative funding = longs paid = squeeze potential. HYDRA: Bias LONG.':rate>0.03?'Elevated funding = longs overextended. HYDRA: Tighten all stops.':'Neutral derivatives. Follow price action and Howrie.');
   var ht=document.getElementById('hydra-thesis'); if(ht) ht.textContent=thesis;
-  var oht=document.getElementById('ov-hydra-t'); if(oht) oht.textContent=thesis.slice(0,80)+'...';
+  document.getElementById('ov-hydra-t').textContent=thesis.slice(0,90)+'...';
 }
 
 function renderCipher() {
@@ -926,7 +1102,7 @@ function renderCipher() {
   CIPHER_DATA.forEach(function(d,i){
     var t=LIVE.t[d.sym]||{}; var p=parseFloat(t.lastPrice||0); var c=parseFloat(t.price24hPcnt||0)*100;
     var cls=c>=0?'up':'dn';
-    html+='<tr><td style="color:var(--muted)">'+(i+1)+'</td><td class="wl-sym">'+d.label+'</td><td style="color:var(--green)">'+d.rev+'</td><td>'+(p?fp(p):'--')+'</td><td class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'--')+'</td><td style="font-size:10px;color:var(--muted)">'+d.note+'</td></tr>';
+    html+='<tr><td style="color:var(--muted)">'+(i+1)+'</td><td class="wl-sym">'+d.label+'</td><td style="color:var(--green)">'+d.rev+'</td><td>'+(p?fp(p):'--')+'</td><td class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'--')+'</td><td style="font-size:9px;color:var(--muted)">'+d.note+'</td></tr>';
   });
   var cb=document.getElementById('cipher-body'); if(cb) cb.innerHTML=html;
 }
@@ -938,24 +1114,34 @@ function renderWatchlist() {
     var f=LIVE.f[item.s]; var cls=c>=0?'up':'dn';
     var sig=c>5?'HOT':c<-5?'WEAK':c>2?'UP':c<-2?'DOWN':'--';
     var sigCol=c>5?'var(--green)':c<-5?'var(--red)':c>2?'var(--green)':c<-2?'var(--red)':'var(--muted)';
-    html+='<tr><td class="wl-sym">'+item.l+'</td><td>'+(p?fp(p):'--')+'</td><td class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'--')+'</td><td style="color:var(--muted)">'+(f?f.pct:'--')+'</td><td style="color:'+sigCol+'">'+sig+'</td></tr>';
+    html+='<tr><td class="wl-sym">'+item.l+'</td><td>'+(p?fp(p):'--')+'</td><td class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'--')+'</td><td style="color:var(--muted)">'+(f?f.pct:'--')+'</td><td style="color:'+sigCol+';font-weight:700">'+sig+'</td></tr>';
   });
   var wb=document.getElementById('wl-body'); if(wb) wb.innerHTML=html;
 }
 
-function updateClock() {
-  var el=document.getElementById('hdr-time'); if(el) el.textContent=new Date().toUTCString().slice(17,25)+' UTC';
-}
-
-// ── CHAT ──
+// ── CHAT (FIXED) ──
 var chatOpen=false;
-function toggleChat(){chatOpen=!chatOpen;document.getElementById('chat-panel').className=chatOpen?'chat-panel open':'chat-panel';}
+function toggleChat(){
+  chatOpen=!chatOpen;
+  var panel=document.getElementById('chat-panel');
+  var btn=document.getElementById('chat-toggle-btn');
+  panel.className=chatOpen?'chat-panel open':'chat-panel';
+  btn.style.background=chatOpen?'rgba(0,200,240,.2)':'var(--accent-dim)';
+  btn.style.borderColor=chatOpen?'rgba(0,200,240,.4)':'rgba(0,200,240,.2)';
+  if(chatOpen){
+    setTimeout(function(){
+      var msgs=document.getElementById('chat-msgs');
+      if(msgs) msgs.scrollTop=99999;
+    },50);
+  }
+}
 function sendChat(){
   var input=document.getElementById('chat-input'); var text=input.value.trim();
-  if(!text){toggleChat();return;}
-  input.value=''; if(!chatOpen) toggleChat();
+  if(!text) return;
+  input.value='';
+  if(!chatOpen) toggleChat();
   addMsg('You',text,true);
-  setTimeout(function(){addMsg('AGENTS',agentReply(text),false);},600);
+  setTimeout(function(){addMsg('AGENTS',agentReply(text),false);},500);
 }
 function addMsg(name,text,isUser){
   var msgs=document.getElementById('chat-msgs');
@@ -970,57 +1156,39 @@ function agentReply(text) {
   var bt=LIVE.t['BTCUSDT']||{}; var bf=LIVE.f['BTCUSDT']||{};
   var fg=LIVE.fg[0]; var fgv=fg?parseInt(fg.value):'--';
 
-  // ORACLE
-  if(t.includes('macro')||t.includes('bloomberg')||t.includes('news')||t.includes('headline')) return 'ORACLE: Go to ORACLE tab → FETCH MACRO for live AI-scored headlines. Paste Bloomberg email → ANALYSE for signal extraction. Current: US-Iran war + 50% rate hike bets = bearish backdrop. Trade spot over perps.';
-  if(t.includes('iran')||t.includes('war')||(t.includes('rate')&&(t.includes('hike')||t.includes('cut')))||t.includes('fed ')) return 'ORACLE: Bloomberg Mar 20 — US-Israel-Iran war ongoing. 50% rate HIKE by Oct 2026. No cuts expected. Oil spike risk. $39T debt. VERDICT: Bearish macro. Hold spot conviction plays (TAO, AKT). Reduce perp leverage.';
-  if(t.includes('dxy')||t.includes('dollar')) return 'ORACLE: DXY rising = crypto headwind. War + inflation = dollar pressure. Watch for DXY reversal as entry signal. Until then: spot only, tight stops on perps.';
-  if(t.includes('fear')||t.includes('greed')||t.includes('f&g')||t.includes(' fg')) return 'ORACLE: F&G at '+fgv+'. '+(fgv<=25?'EXTREME FEAR = accumulate quality.':fgv>=75?'GREED = take profits, reduce size.':fgv<=45?'FEAR = smart money building.':'Neutral. Let Howrie lead.');
+  // Cross-pollination hints
+  function xpoll(msg){return '<br><span style="font-size:9px;color:var(--purple);opacity:.7">⚡ Cross-poll: '+msg+'</span>';}
 
-  // PHANTOM
-  if(t.includes('altrank')||t.includes('lunar')||t.includes('social')||t.includes('momentum')) return 'CIPHER: Hit SCAN SOCIAL on Overview tab for LunarCrush AltRank leaders. SIREN #1, TAO #10, SOL #20, LINK #15 right now. Hit SOCIAL SCAN on CIPHER tab for live Whatsup intelligence on TAO, SOL, AKT, RNDR, NEAR.';
+  if(t.includes('macro')||t.includes('bloomberg')||t.includes('news')) return 'ORACLE: ORACLE tab → FETCH MACRO for AI-scored headlines. Paste Bloomberg → ANALYSE. Current: US-Iran war + 50% rate hike bets = bearish backdrop. Trade spot over perps. NEXUS: Sector rotation shows AI still leading despite macro headwinds.'+xpoll('ORACLE macro → HYDRA sizing (reduce leverage in headwinds)');
+  if(t.includes('iran')||t.includes('war')) return 'ORACLE: Bloomberg Mar 20 — US-Israel-Iran war ongoing. 50% rate HIKE by Oct 2026. No cuts expected. Oil spike risk. $39T debt. VERDICT: Bearish macro. Hold spot conviction plays (TAO, AKT). Reduce perp leverage to minimum.'+xpoll('ORACLE bearish macro → HYDRA: reduce position sizing');
+  if(t.includes('fear')||t.includes('greed')||t.includes('f&g')) return 'ORACLE: F&G at '+fgv+'. '+(fgv<=25?'EXTREME FEAR = accumulate quality. GCR: this is when you buy, not panic.':fgv>=75?'GREED = take profits, reduce size, stop chasing.':fgv<=45?'FEAR = smart money building. Contrarian long signal.':'Neutral. Let Howrie lead entry.');
+  if(t.includes('altrank')||t.includes('lunar')||t.includes('social')||t.includes('momentum')) return 'CIPHER: Hit SCAN SOCIAL on Overview for LunarCrush AltRank leaders. Session data: SIREN #1, TAO #10, SOL #20, LINK #15. Hit SOCIAL SCAN on CIPHER tab for live Whatsup intelligence.'+xpoll('CIPHER whale/founder intel → PHANTOM conviction score upgrade');
   if(t.includes('triangle')||t.includes('pattern')||t.includes('breakout')||t.includes('phantom')) {
     var tri=LIVE.tri&&LIVE.tri.length>0;
-    if(tri){var top=LIVE.tri[0];return 'PHANTOM: Last scan found '+LIVE.tri.length+' pattern(s). Top: '+top.sym+' score '+top.score+' — '+(top.breakout?'BREAKING OUT.':top.nearBreakout?top.distToRes+'% from resistance.':'forming.')+' Go to PHANTOM tab for full detail.';}
-    return 'PHANTOM: Go to PHANTOM tab → SCAN NOW for live 15m candle analysis on all triangle watch symbols. Criteria: flat resistance ±0.4%, rising lows, vol spike ≥1.4×.';
+    if(tri){var top=LIVE.tri[0];return 'PHANTOM: Last scan — '+LIVE.tri.length+' pattern(s). Top: '+top.sym+' score '+top.score+' — '+(top.breakout?'BREAKING OUT 🚀':top.nearBreakout?top.distToRes+'% from resistance':' forming')+'.<br>HYDRA: Check OI and funding on '+top.sym+' for confluence before entry.'+xpoll('PHANTOM breakout → HYDRA checks funding/OI for confluence');}
+    return 'PHANTOM: PHANTOM tab → SCAN NOW for live 15m candle analysis. Criteria: flat resistance ±0.4%, rising lows, vol spike ≥1.4×. Conviction score = 60% base +15% vol +10% multi-TF +5% CIPHER fundamentals.';
   }
-  if(t.includes('bear flag')||(t.includes('near')&&t.includes('lesson'))) return 'PHANTOM: NEAR lesson — triangle after strong downtrend = bear flag. Check 1H before entering any 15m pattern. What came before matters.';
-  if(t.includes('gcr')||t.includes('contrarian')) return 'PHANTOM (GCR): Crowd certainty IS the trade. When everyone agrees — everyone is wrong. Check: Is sentiment at ATH? Is funding highly positive? Is founder overconfident? If yes to most → that is the short. GCR faded Do Kwon at peak certainty. That is the edge.';
+  if(t.includes('gcr')||t.includes('contrarian')) return 'PHANTOM (GCR Classic): Crowd certainty IS the trade. When everyone agrees — everyone is wrong. Check: Is sentiment at ATH? Funding highly positive? Founder overconfident? If yes → that is the short. GCR faded Do Kwon at peak certainty. Anti-herd. Data-driven. Quiet.';
+  if(t.includes('btc')||t.includes('bitcoin')) return 'HYDRA: BTC '+fp(bt.lastPrice)+'. Funding '+(bf.pct||'--')+' ['+(bf.sig||'--')+']. '+(parseFloat(bf.cur||0)<-0.01?'Negative = longs paid = squeeze fuel. Bias LONG on dips.':'Neutral derivatives. Follow Howrie.');
+  if(t.includes('funding')) {var rate=parseFloat(bf.cur||0);return 'HYDRA: BTC Funding '+(bf.pct||'--')+'. '+(rate<-0.01?'NEGATIVE — longs being PAID. Hold and collect funding.':rate>0.03?'HIGH — longs overextended. Tighten stops now.':'Neutral. No derivatives edge.')+xpoll('HYDRA funding squeeze → NEXUS checks sector for cascade risk');}
+  if(t.includes('tao')||t.includes('bittensor')) return 'CIPHER: TAO — $43.2M Q1 revenue, 15x nearest rival. Jensen Huang endorsed publicly. AltRank #10. Social dominance 175% above avg. Volume $367M. PHANTOM: 84% conviction. Accumulate dips — no chase.'+xpoll('CIPHER whale intel → PHANTOM conviction: +5% for TAO fundamentals');
+  if(t.includes('akt')||t.includes('akash')) return 'CIPHER: AKT — $0.74M Q1. 85% cheaper than AWS. AI workloads +300% QoQ. Spot $0.595-0.610, stop $0.585, target $0.700. No leverage on thesis plays. PHANTOM: 78% conviction.';
+  if(t.includes('nmr')||t.includes('numerai')) return 'CIPHER: NMR lag trade. $0.4M Q1 rev. AI hedge fund, deflationary token structure. Flat while AI sector green = coiled spring. Entry $7.40-7.55 spot, stop $7.39, target $8.10. 71% conviction.'+xpoll('NEXUS lag detector active for NMR');
+  if(t.includes('arc')) return 'CIPHER: ARC agents narrative. 68% conviction. Watch $0.048-0.050. Small position only — sector early stage. The ARC averaging-down lesson from last session: blue band on a losing position is NOT a new signal.';
+  if(t.includes('sector')||t.includes('rotation')||t.includes('nexus')) return 'NEXUS: GPU Compute (AKT+RNDR+IO) leading. AI Intelligence (TAO+FET+NEAR) strong. Kill-switch: margin >80%, session -20%, band red. NEXUS tab for live cluster performance + lag trade detection.'+xpoll('NEXUS rotation signal → CIPHER entry timing (wait for confirmation)');
+  if(t.includes('lag')||t.includes('lag trade')) return 'NEXUS: Lag trade = quality token flat/red on green sector day = coiled spring. NEXUS tab after REFRESH for auto-detection. Signal: sector avg +2%+ while token flat or negative. Confirm with Howrie blue band before entry.';
+  if(t.includes('howrie')||t.includes('band')||t.includes('rsi')) return 'COORDINATOR: Howrie rules (you built this): Blue band + RSI>50 = HOLD LONGS. Red band = EXIT IMMEDIATELY — no hope, no hold, click the button. Green triangle = RSI>80 + vol cross = momentum confirmation (NOT overbought). Multiple red triangles = capitulation = smart money buying. Band resets every RSI 50 cross = master signal.';
+  if(t.includes('rule')||t.includes('exit')||t.includes('stop')) return 'COORDINATOR: Core rules baked into all agents — (1) Red band = exit immediately. (2) Never add to a losing position. (3) Never let winner become loser. (4) 50% daily target = protect it. (5) Stop-to-liq ≥1% at 20x. (6) Max 80% margin. (7) Spot for thesis, perps for short-term only. Rule 9 (ARC lesson): fresh blue band on new candle = new trade, not reason to average down.';
+  if(t.includes('siren')) return 'HYDRA: SIREN — check Howrie. Blue band = hold + collect negative funding. Red band = exit immediately. Funding payment only worth holding if band stays blue. SIREN AltRank #1 last session — social momentum strong.';
+  if(t.includes('near')&&(t.includes('triangle')||t.includes('flag'))) return 'PHANTOM: NEAR lesson — triangle after strong downtrend = bear flag. Ascending triangle looks bullish but base is weak = overhead supply from trapped longs. Always check 1H structure before 15m entry. What came before matters.';
+  if(t.includes('scan')||t.includes('watchlist')||t.includes('best')) return 'COORDINATOR: REFRESH for live prices. Priorities: TAO 84%, AKT 78%, NMR 71%, ARC 68%. Overview → SCAN SOCIAL for AltRank. CIPHER → SOCIAL SCAN for Whatsup. PHANTOM → SCAN NOW for triangles. ORACLE → FETCH MACRO for news.';
 
-  // HYDRA
-  if(t.includes('btc')||t.includes('bitcoin')) return 'HYDRA: BTC '+fp(bt.lastPrice)+'. Funding '+(bf.pct||'--')+' ['+(bf.sig||'--')+']. '+(parseFloat(bf.cur||0)<-0.01?'Negative = longs paid = squeeze fuel. Bias LONG.':'Neutral derivatives.');
-  if(t.includes('funding')) {var rate=parseFloat(bf.cur||0);return 'HYDRA: BTC Funding '+(bf.pct||'--')+'. '+(rate<-0.01?'NEGATIVE — longs being PAID. Hold and collect.':rate>0.03?'HIGH — longs overextended. Tighten stops.':'Neutral. No edge from derivatives.');}
-  if(t.includes('liq')||t.includes('heatmap')||t.includes('liquidation')) return 'HYDRA: CoinGlass liq heatmap — yellow/bright = massive clusters. Below price = floor. Above = magnet. Flush TO cluster then recovery = whale stop hunt. Howrie blue during flush = buy. Red = real breakdown = exit.';
+  return 'COORDINATOR (GCR): BTC '+fp(bt.lastPrice)+' | F&G '+fgv+' | Funding '+(bf.pct||'--')+'. Ask about: token (TAO/AKT/NMR/ARC/SIREN), pattern/breakout, Howrie rules, macro/Bloomberg, funding, sector rotation, lag trade, GCR contrarian. All 5 agents live — cross-pollination active.';
+}
 
-  // CIPHER
-  if(t.includes('tao')||t.includes('bittensor')) return 'CIPHER: TAO #1 Q1 2026 — $43.2M, 15x nearest rival. Jensen Huang endorsed. LunarCrush AltRank #10. Social dominance ATH. Volume $367M (119% above avg). 84% PHANTOM conviction. Accumulate dips.';
-  if(t.includes('akt')||t.includes('akash')) return 'CIPHER: AKT $0.74M Q1. 85% cheaper than AWS. AI workloads +300% QoQ. Spot $0.595-0.610, stop $0.585, target $0.700, 6-12 weeks. No leverage on thesis plays.';
-  if(t.includes('nmr')||t.includes('numerai')) return 'CIPHER: NMR lag trade. $0.4M Q1 rev. AI hedge fund, deflationary. Flat while AI sector green. Entry $7.40-7.55 spot, stop $7.39, target $8.10. 71% conviction.';
-  if(t.includes('arc')) return 'CIPHER: ARC agents early. 68% conviction. Watch $0.048-0.050. Small position only — agents sector still building.';
-  if(t.includes('render')||t.includes('rndr')) return 'CIPHER: RENDER $1.2M Q1. Apple pipeline. Re-entry only when Howrie back to blue band. You exited perfectly at zero last session.';
-  if(t.includes('virtual')) return 'CIPHER: VIRTUAL $2.87M Q1. 200+ agents on Base. #2 AI revenue. AltRank improving. Watch for Howrie entry.';
-  if(t.includes('icp')||t.includes('internet computer')) return 'CIPHER: ICP $0.3M Q1. Mission 70 governance vote = uncertainty + selling. -6.28% today. Short thesis supported: vol below avg, mentions down, community divided. Trail stop.';
-  if(t.includes('sol')||t.includes('solana')) return 'CIPHER: SOL AltRank #20. Nansen Jupiter $30B staked SOL now usable as collateral — fresh catalyst. Howrie was showing blue band RSI 56 when Nansen announced. Watch for continuation. Social sentiment 72% vs 84% avg — crowd cautious = potential for upside surprise.';
-
-  // NEXUS
-  if(t.includes('sector')||t.includes('rotation')||t.includes('nexus')) return 'NEXUS: GPU Compute (AKT+RNDR+IO) leading. AI Intelligence (TAO+FET+NEAR) strong. Rotation: BTC → ETH → L1s → AI → small caps. Check NEXUS tab for lag trade candidates — flat/red tokens in green sectors.';
-  if(t.includes('lag')||t.includes('lag trade')) return 'NEXUS: Lag trade = quality token flat/red on green sector day = coiled spring. Check NEXUS tab after REFRESH for auto-detected candidates. Signal: sector avg +2%+ while specific token flat or negative. Confirm with Howrie blue band before entry.';
-
-  // Howrie
-  if(t.includes('howrie')||t.includes('band')||t.includes('rsi')) return 'COORDINATOR: Howrie — Blue band + RSI>50 = HOLD LONGS. Red band = EXIT IMMEDIATELY. Green triangle = RSI>80 + volume cross = momentum confirmation (NOT overbought warning). Multiple red triangles oversold = capitulation = smart money buying. Band resets every RSI 50 cross — that is the master signal.';
-
-  // Positions
-  if(t.includes('siren')) return 'HYDRA: SIREN — check Howrie. Blue band = hold + collect negative funding. Red band = exit immediately. Funding payment only worth holding if band stays blue.';
-  if(t.includes('pippin')) return 'HYDRA: PIPPIN — Howrie was showing red band after the spike. Check current band. If still red = stay short or wait. Liq heatmap confirmed whale stop hunt on the pump.';
-  if(t.includes('resolv')) return 'CIPHER: RESOLV — USR stablecoin exploit confirmed. $50M attack. -1200% funding = heavy shorts. If short: thesis intact, hold to $0.048-0.049 target. If long: Howrie red band = exit immediately per protocol.';
-  if(t.includes('virtual')) return 'CIPHER: VIRTUAL $2.87M Q1. 200+ agents on Base. Check Howrie for current band status — entry only on blue band.';
-
-  // Rules
-  if(t.includes('rule')||t.includes('exit')||t.includes('stop loss')) return 'COORDINATOR: Core rules — (1) Never let winner become loser. (2) Red band = exit immediately. (3) Never average down. (4) 50% daily target = protect it. (5) Stop-to-liq ≥1% at 20x. (6) Max 80% margin. (7) Spot for thesis, perps for short-term only.';
-
-  // Scan / default
-  if(t.includes('scan')||t.includes('watchlist')||t.includes('best')) return 'COORDINATOR: REFRESH for prices. Priorities: TAO 84%, AKT 78%, NMR 71%. Overview → SCAN SOCIAL for AltRank leaders. CIPHER → SOCIAL SCAN for Whatsup. PHANTOM → SCAN NOW for triangles. ORACLE → FETCH MACRO for news.';
-
-  return 'COORDINATOR: BTC '+fp(bt.lastPrice)+' | F&G '+fgv+'. Ask about: token (TAO/AKT/SOL/NMR/ARC/RESOLV), pattern, position, macro/Bloomberg, funding, sector, Howrie rules, GCR contrarian, altrank, lag trade. All 5 agents live.';
+// ── CLOCK ──
+function updateClock() {
+  var el=document.getElementById('hdr-time'); if(el) el.textContent=new Date().toUTCString().slice(17,25)+' UTC';
 }
 
 // ── MAIN REFRESH ──
@@ -1028,41 +1196,51 @@ function refreshAll() {
   var btn=document.getElementById('rbtn');
   if(btn){btn.textContent='LOADING...';btn.disabled=true;}
   Promise.resolve()
-    .then(function(){return fetchFG();}).then(function(){renderFG();})
+    .then(function(){return fetchFG();})
+    .then(function(){renderFG();})
     .then(function(){return fetchTickers();})
     .then(function(){renderTicker();renderHydra();renderCipher();renderWatchlist();renderNexus();})
     .then(function(){return fetchFunding('BTCUSDT');})
     .then(function(){return fetchFunding('ETHUSDT');})
     .then(function(){return fetchFunding('TAOUSDT');})
     .then(function(){return fetchFunding('AKTUSDT');})
+    .then(function(){return fetchFunding('NEARUSDT');})
     .then(function(){renderHydra();})
     .catch(function(e){console.warn('Refresh error:',e);})
-    .finally(function(){if(btn){btn.textContent='REFRESH';btn.disabled=false;}});
+    .finally(function(){if(btn){btn.textContent='⟳ REFRESH';btn.disabled=false;}});
 }
 
 // ── INIT ──
 window.addEventListener('load', function() {
   updateClock();
   setInterval(updateClock, 1000);
-  // Fix: init navigation properly
-  var firstItem = document.querySelector('.sb-item');
-  if(firstItem) firstItem.classList.add('active');
-  var overview = document.getElementById('view-overview');
-  if(overview) overview.classList.add('active');
 
-  var sendBtn=document.getElementById('chat-send');
-  if(sendBtn) sendBtn.onclick=sendChat;
-  var closeBtn=document.getElementById('chat-close');
-  if(closeBtn) closeBtn.onclick=toggleChat;
+  // Start WebSocket for live prices (no CORS issues)
+  startWS();
+
+  // Chat input handler
   var chatInput=document.getElementById('chat-input');
   if(chatInput){
     chatInput.addEventListener('keydown',function(e){if(e.key==='Enter')sendChat();});
-    chatInput.addEventListener('focus',function(){if(!chatOpen)toggleChat();});
   }
 
-  setTimeout(refreshAll,300);
-  setInterval(function(){fetchTickers().then(function(){renderTicker();renderHydra();renderWatchlist();renderNexus();});},30000);
-  setInterval(function(){fetchFG().then(function(){renderFG();});},600000);
+  // Initial REST load for full ticker + F&G
+  setTimeout(refreshAll, 800);
+
+  // REST fallback every 30s (WS handles real-time)
+  setInterval(function(){
+    if(!wsConnected) {
+      fetchTickers().then(function(){renderTicker();renderHydra();renderWatchlist();renderNexus();renderCipher();});
+    } else {
+      // Still refresh watchlist render even with WS
+      renderTicker(); renderHydra(); renderWatchlist(); renderNexus(); renderCipher();
+    }
+  }, 15000);
+
+  // Refresh F&G every 10 min
+  setInterval(function(){
+    fetchFG().then(function(){renderFG();});
+  }, 600000);
 });
 </script>
 </body>
