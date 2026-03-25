@@ -892,7 +892,12 @@ function fetchMacroNews() {
   var prompt = 'You are ORACLE, macro intelligence agent for a crypto trading system (GCR framework — contrarian, data-driven, anti-herd). Today is '+new Date().toUTCString().slice(0,16)+'. Generate 10 current crypto macro news headlines. Return ONLY a JSON array with no markdown fences: [{"source":"CoinDesk","title":"...","desc":"one sentence","signal":"BULLISH or BEARISH or NEUTRAL"}]. Cover: BTC price action, Fed/rates (50% rate hike bets), Iran war impact, institutional moves, DXY, Fear & Greed. Be specific with numbers.';
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': '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',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:prompt}]})
   })
   .then(function(r){return r.json();})
@@ -1432,7 +1437,12 @@ function sendToAPI() {
 
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': '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',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
