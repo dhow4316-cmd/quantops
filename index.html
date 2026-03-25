@@ -58,8 +58,18 @@ header{height:46px;background:var(--surface);border-bottom:1px solid var(--borde
 .watch{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.2);}
 .divider{height:1px;background:var(--border);margin:6px 0;}
 
+/* LIVE PRICES SIDEBAR */
+.price-sidebar{padding:10px 14px;border-top:1px solid var(--border);}
+.price-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.price-row:last-child{border-bottom:none;}
+.price-sym{font-size:10px;font-weight:700;color:var(--text);min-width:48px;}
+.price-val{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.price-chg{font-size:9px;font-family:'JetBrains Mono',monospace;min-width:44px;text-align:right;}
+@keyframes flash{0%{opacity:.3;}100%{opacity:1;}}
+.price-flash{animation:flash .4s ease;}
+
 /* F&G SIDEBAR */
-.fg-sidebar{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+.fg-sidebar{padding:12px 14px;border-top:1px solid var(--border);}
 .fg-label{font-size:8px;color:var(--muted);margin-bottom:6px;font-weight:700;letter-spacing:.1em;}
 .fg-val{font-size:24px;font-weight:700;margin-bottom:2px;font-family:'Syne',sans-serif;}
 .fg-cls{font-size:9px;margin-bottom:8px;letter-spacing:.05em;}
@@ -91,6 +101,11 @@ header{height:46px;background:var(--surface);border-bottom:1px solid var(--borde
 .ac-name{font-size:11px;font-weight:700;font-family:'Syne',sans-serif;}
 .ac-badge{font-size:8px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:auto;}
 .ac-body{font-size:10px;color:var(--muted);line-height:1.6;}
+
+/* WATCHLIST SCANNER */
+.wl-filter-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:9px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;transition:all .15s;}
+.wl-filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+.wl-filter-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 
 /* WATCHLIST */
 .wl-table{width:100%;border-collapse:collapse;}
@@ -190,7 +205,7 @@ header{height:46px;background:var(--surface);border-bottom:1px solid var(--borde
     </div>
     <div class="sb-item" id="nav-watchlist" onclick="sv('watchlist','nav-watchlist')">
       <div class="sb-icon" style="background:rgba(255,255,255,.04)">📋</div>
-      <div><div class="sb-name">Watchlist</div><div class="sb-role">27 SYMBOLS</div></div>
+      <div><div class="sb-name">Watchlist</div><div class="sb-role" id="wl-sym-count">ALL BYBIT</div></div>
     </div>
     <div class="divider"></div>
     <div class="sb-sec">Agents</div>
@@ -220,6 +235,25 @@ header{height:46px;background:var(--surface);border-bottom:1px solid var(--borde
       <span class="sb-badge watch" id="phantom-badge">WATCH</span>
     </div>
     <div class="divider"></div>
+    <div class="divider"></div>
+    <div class="price-sidebar">
+      <div style="font-size:8px;font-weight:700;color:var(--muted);letter-spacing:.12em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        LIVE PRICES
+        <span id="ws-status" style="font-size:8px;color:var(--muted);">CONNECTING...</span>
+      </div>
+      <div id="sidebar-prices">
+        <div class="price-row"><span class="price-sym">BTC</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">ETH</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">SOL</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">TAO</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">AKT</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">RNDR</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">NEAR</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">NMR</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">ARC</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+        <div class="price-row"><span class="price-sym">HYPE</span><span class="price-val" style="color:var(--accent)">--</span><span class="price-chg" style="color:var(--muted)">--</span></div>
+      </div>
+    </div>
     <div class="fg-sidebar">
       <div class="fg-label">FEAR AND GREED</div>
       <div class="fg-val" id="fg-val" style="color:var(--red)">--</div>
@@ -273,14 +307,44 @@ header{height:46px;background:var(--surface);border-bottom:1px solid var(--borde
       </div>
     </div>
 
-    <!-- WATCHLIST -->
+    <!-- WATCHLIST / FULL SCANNER -->
     <div class="view" id="view-watchlist">
-      <div class="panel">
-        <div class="panel-title"><span class="panel-title-main">Watchlist — 27 Symbols</span></div>
-        <table class="wl-table">
-          <thead><tr><th>SYMBOL</th><th>PRICE</th><th>24H</th><th>FUNDING</th><th>SIGNAL</th></tr></thead>
-          <tbody id="wl-body"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Hit REFRESH to load prices</td></tr></tbody>
-        </table>
+      <div class="panel" style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <!-- Filter tabs -->
+          <div style="display:flex;gap:4px;">
+            <button class="wl-filter-btn active" id="wlf-all" onclick="setWLFilter('all')">ALL</button>
+            <button class="wl-filter-btn" id="wlf-gainers" onclick="setWLFilter('gainers')">🔥 GAINERS</button>
+            <button class="wl-filter-btn" id="wlf-losers" onclick="setWLFilter('losers')">💀 LOSERS</button>
+            <button class="wl-filter-btn" id="wlf-volume" onclick="setWLFilter('volume')">📊 VOLUME</button>
+            <button class="wl-filter-btn" id="wlf-squeeze" onclick="setWLFilter('squeeze')">⚡ SQUEEZE</button>
+            <button class="wl-filter-btn" id="wlf-pinned" onclick="setWLFilter('pinned')">📌 PINNED</button>
+          </div>
+          <!-- Search -->
+          <input id="wl-search" placeholder="Search symbol..." style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:5px 10px;outline:none;font-family:'JetBrains Mono',monospace;width:130px;" oninput="renderWatchlist()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <!-- Stats -->
+          <span id="wl-stats" style="font-size:9px;color:var(--muted);margin-left:auto;"></span>
+          <button class="action-btn" onclick="refreshAll()" style="background:var(--accent);color:#000;">⟳ SCAN</button>
+        </div>
+      </div>
+      <div class="panel" style="padding:0;overflow:hidden;">
+        <div style="overflow-y:auto;max-height:calc(100vh - 220px);">
+          <table class="wl-table" style="min-width:600px;">
+            <thead>
+              <tr>
+                <th onclick="setWLSort('sym')" style="cursor:pointer;user-select:none;">SYMBOL <span id="sort-sym"></span></th>
+                <th onclick="setWLSort('price')" style="cursor:pointer;user-select:none;">PRICE <span id="sort-price"></span></th>
+                <th onclick="setWLSort('chg')" style="cursor:pointer;user-select:none;">24H % <span id="sort-chg">▼</span></th>
+                <th onclick="setWLSort('vol')" style="cursor:pointer;user-select:none;">VOLUME <span id="sort-vol"></span></th>
+                <th onclick="setWLSort('funding')" style="cursor:pointer;user-select:none;">FUNDING <span id="sort-funding"></span></th>
+                <th>SIGNAL</th>
+              </tr>
+            </thead>
+            <tbody id="wl-body">
+              <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px;">Hit SCAN to load all Bybit symbols</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1107,16 +1171,124 @@ function renderCipher() {
   var cb=document.getElementById('cipher-body'); if(cb) cb.innerHTML=html;
 }
 
-function renderWatchlist() {
-  var html='';
-  WL.forEach(function(item){
-    var t=LIVE.t[item.s]||{}; var p=parseFloat(t.lastPrice||0); var c=parseFloat(t.price24hPcnt||0)*100;
-    var f=LIVE.f[item.s]; var cls=c>=0?'up':'dn';
-    var sig=c>5?'HOT':c<-5?'WEAK':c>2?'UP':c<-2?'DOWN':'--';
-    var sigCol=c>5?'var(--green)':c<-5?'var(--red)':c>2?'var(--green)':c<-2?'var(--red)':'var(--muted)';
-    html+='<tr><td class="wl-sym">'+item.l+'</td><td>'+(p?fp(p):'--')+'</td><td class="'+cls+'">'+(p?(c>=0?'+':'')+c.toFixed(2)+'%':'--')+'</td><td style="color:var(--muted)">'+(f?f.pct:'--')+'</td><td style="color:'+sigCol+';font-weight:700">'+sig+'</td></tr>';
+// ── FULL BYBIT SCANNER ──
+var wlFilter = 'all';
+var wlSort = {col:'chg', dir:-1}; // -1 = desc, 1 = asc
+var PINNED = ['BTCUSDT','ETHUSDT','SOLUSDT','TAOUSDT','RENDERUSDT','AKTUSDT','NEARUSDT','NMRUSDT','ARCUSDT','HYPEUSDT','VIRTUALUSDT','LINKUSDT','FETUSDT','IOUSDT'];
+
+function setWLFilter(f) {
+  wlFilter = f;
+  document.querySelectorAll('.wl-filter-btn').forEach(function(b){b.classList.remove('active');});
+  var el = document.getElementById('wlf-'+f); if(el) el.classList.add('active');
+  renderWatchlist();
+}
+
+function setWLSort(col) {
+  if(wlSort.col === col) { wlSort.dir *= -1; } else { wlSort.col = col; wlSort.dir = -1; }
+  ['sym','price','chg','vol','funding'].forEach(function(c){
+    var el = document.getElementById('sort-'+c); if(el) el.textContent = '';
   });
-  var wb=document.getElementById('wl-body'); if(wb) wb.innerHTML=html;
+  var el = document.getElementById('sort-'+col);
+  if(el) el.textContent = wlSort.dir === -1 ? '▼' : '▲';
+  renderWatchlist();
+}
+
+function getSignal(chg, funding) {
+  var f = parseFloat(funding || 0);
+  if(chg > 10) return {l:'MOON', c:'var(--green)'};
+  if(chg > 5)  return {l:'HOT',  c:'var(--green)'};
+  if(chg > 2)  return {l:'UP',   c:'var(--green)'};
+  if(chg < -10) return {l:'DUMP', c:'var(--red)'};
+  if(chg < -5)  return {l:'WEAK', c:'var(--red)'};
+  if(chg < -2)  return {l:'DOWN', c:'var(--red)'};
+  if(f < -0.01) return {l:'SQUEEZE', c:'var(--accent)'};
+  if(f > 0.03)  return {l:'OVERLONG', c:'var(--amber)'};
+  return {l:'--', c:'var(--muted)'};
+}
+
+function fvol(v) {
+  v = parseFloat(v || 0);
+  if(!v) return '--';
+  if(v >= 1e9) return '$'+(v/1e9).toFixed(1)+'B';
+  if(v >= 1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(v >= 1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+
+function renderWatchlist() {
+  var allSyms = Object.keys(LIVE.t);
+  if(allSyms.length === 0) {
+    document.getElementById('wl-body').innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px;">Hit SCAN to load all Bybit symbols</td></tr>';
+    return;
+  }
+
+  var search = (document.getElementById('wl-search') ? document.getElementById('wl-search').value.trim().toUpperCase() : '');
+
+  // Build rows
+  var rows = allSyms.map(function(sym) {
+    var t = LIVE.t[sym];
+    var p = parseFloat(t.lastPrice || 0);
+    var c = parseFloat(t.price24hPcnt || 0) * 100;
+    var v = parseFloat(t.turnover24h || t.volume24h || 0);
+    var f = LIVE.f[sym] ? LIVE.f[sym].cur : null;
+    return {sym:sym, label:sym.replace('USDT',''), p:p, c:c, v:v, f:f, pinned:PINNED.indexOf(sym)>=0};
+  });
+
+  // Filter
+  rows = rows.filter(function(r) {
+    if(!r.p) return false; // skip zero price
+    if(search && r.label.indexOf(search) < 0) return false;
+    if(wlFilter === 'gainers') return r.c > 3;
+    if(wlFilter === 'losers')  return r.c < -3;
+    if(wlFilter === 'volume')  return r.v > 5000000;
+    if(wlFilter === 'squeeze') return r.f !== null && r.f < -0.005;
+    if(wlFilter === 'pinned')  return r.pinned;
+    return true;
+  });
+
+  // Sort
+  rows.sort(function(a, b) {
+    var av, bv;
+    if(wlSort.col === 'sym')     { av = a.label; bv = b.label; return wlSort.dir * av.localeCompare(bv); }
+    if(wlSort.col === 'price')   { av = a.p; bv = b.p; }
+    if(wlSort.col === 'chg')     { av = a.c; bv = b.c; }
+    if(wlSort.col === 'vol')     { av = a.v; bv = b.v; }
+    if(wlSort.col === 'funding') { av = a.f||0; bv = b.f||0; }
+    return wlSort.dir * ((av||0) - (bv||0));
+  });
+
+  // Cap display at 200 rows for performance
+  var total = rows.length;
+  rows = rows.slice(0, 200);
+
+  // Stats
+  var gainers = rows.filter(function(r){return r.c>0;}).length;
+  var losers  = rows.filter(function(r){return r.c<0;}).length;
+  var statsEl = document.getElementById('wl-stats');
+  if(statsEl) statsEl.textContent = total+' symbols · 🟢'+gainers+' 🔴'+losers+(total>200?' (showing 200)':'');
+  var cntEl = document.getElementById('wl-sym-count');
+  if(cntEl) cntEl.textContent = total+' SYMBOLS';
+
+  // Render
+  var html = '';
+  rows.forEach(function(r) {
+    var cls = r.c >= 0 ? 'up' : 'dn';
+    var sig = getSignal(r.c, r.f);
+    var fStr = r.f !== null ? (r.f*100).toFixed(4)+'%' : '--';
+    var fCol = r.f !== null ? (r.f < 0 ? 'var(--green)' : r.f > 0.02 ? 'var(--red)' : 'var(--muted)') : 'var(--muted)';
+    var pin  = r.pinned ? '<span style="color:var(--amber);margin-right:3px;font-size:9px;">📌</span>' : '';
+    html += '<tr>';
+    html += '<td class="wl-sym">'+pin+r.label+'</td>';
+    html += '<td>'+(r.p ? fp(r.p) : '--')+'</td>';
+    html += '<td class="'+cls+'">'+(r.p ? (r.c>=0?'+':'')+r.c.toFixed(2)+'%' : '--')+'</td>';
+    html += '<td style="color:var(--muted)">'+fvol(r.v)+'</td>';
+    html += '<td style="color:'+fCol+'">'+fStr+'</td>';
+    html += '<td style="color:'+sig.c+';font-weight:700">'+sig.l+'</td>';
+    html += '</tr>';
+  });
+
+  var wb = document.getElementById('wl-body');
+  if(wb) wb.innerHTML = html || '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px;">No results</td></tr>';
 }
 
 // ── CHAT (FIXED) ──
