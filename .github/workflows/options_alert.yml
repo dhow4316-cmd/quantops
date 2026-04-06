@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Options Alert Agent (single scan)
         env:
-          TELEGRAM_TOKEN:   ${{ 8616658610:AAHUtpzBW4XTSUdefwsk_5fwSpKdPru2to}}
+          TELEGRAM_TOKEN:   ${{ 8616658610:AAHUtpzBW4XTSUdefwsk_5fwSpKdPru2to }}
           TELEGRAM_CHAT_ID: ${{ 6598485796 }}
           BYBIT_API_KEY:    ${{ irg4WOqoPdOJoMos3u }}
           BYBIT_API_SECRET: ${{ Q87UAgAHmg78jO0Fa2kC0Mvt4QR7f2nSuRwU8616658610 }}
