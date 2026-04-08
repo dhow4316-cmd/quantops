@@ -11,9 +11,9 @@ Triggers Telegram alert when:
   - Howrie Band is BLUE (red = STAND_ASIDE, no alert)
   - Pattern is confirmed (not partial)
 
-Data source: Bybit V5 public kline API (no auth required for market data)
-NOTE: CoinGecko free tier is rate-limited aggressively and unusable at scale.
-      Bybit public market endpoints (no API key) are NOT blocked from GitHub Actions.
+Data source: Binance public kline API (no auth required, not geo-blocked from GitHub Actions)
+NOTE: Bybit blocks ALL GitHub Actions IPs via CloudFront (both authenticated and public endpoints).
+      Binance website/app is geo-restricted in AU but the REST API is not blocked from US-based runners.
 
 GitHub Secrets required:
   TELEGRAM_TOKEN
@@ -47,7 +47,7 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BYBIT_BASE      = "https://api.bybit.com"
+BINANCE_BASE    = "https://api.binance.com"
 TELEGRAM_TOKEN  = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT   = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY   = os.environ["ANTHROPIC_API_KEY"]
@@ -66,56 +66,52 @@ CANDLE_LIMIT         = int(os.environ.get("PHANTOM_CANDLES", "80"))
 HB_FAST = int(os.environ.get("HB_FAST", "8"))
 HB_SLOW = int(os.environ.get("HB_SLOW", "21"))
 
-# Bybit interval map: our minutes string → Bybit interval param
-# Bybit accepts: 1 3 5 15 30 60 120 240 360 720 D W M
-BYBIT_INTERVAL_MAP = {
-    "15":  "15",
-    "60":  "60",
-    "240": "240",
+# Binance interval map: our minutes string → Binance interval param
+BINANCE_INTERVAL_MAP = {
+    "15":  "15m",
+    "60":  "1h",
+    "240": "4h",
 }
 
-# ── Bybit Kline Data ──────────────────────────────────────────────────────────
+# ── Binance Kline Data ────────────────────────────────────────────────────────
 
 def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
     """
-    Fetch OHLCV from Bybit V5 public kline endpoint.
-    No API key required — public market data endpoint.
-    Works from any GitHub Actions runner IP (not blocked by CloudFront).
+    Fetch OHLCV from Binance public kline endpoint.
+    No API key required — fully public market data.
+    GitHub Actions runners are US-based and not geo-blocked by Binance API.
+    Note: Binance website/app is geo-restricted in AU, but the REST API is not.
 
-    Bybit kline returns: [startTime, open, high, low, close, volume, turnover]
-    Ordered newest-first, so we reverse after fetching.
+    Binance kline returns rows of:
+    [openTime, open, high, low, close, volume, closeTime, ...]
+    Returned oldest-first — no reversal needed.
     """
-    bybit_interval = BYBIT_INTERVAL_MAP.get(interval, interval)
+    binance_interval = BINANCE_INTERVAL_MAP.get(interval, f"{interval}m")
 
-    url = f"{BYBIT_BASE}/v5/market/kline"
+    url = f"{BINANCE_BASE}/api/v3/klines"
     params = {
-        "category": "linear",   # USDT perpetual futures
         "symbol":   symbol.upper(),
-        "interval": bybit_interval,
-        "limit":    min(limit, 200),  # Bybit max per request = 200
+        "interval": binance_interval,
+        "limit":    min(limit, 1000),  # Binance max per request = 1000
     }
 
     headers = {
-        "Accept": "application/json",
+        "Accept":     "application/json",
         "User-Agent": "QUANTOPS-PHANTOM/1.0"
     }
 
     resp = requests.get(url, params=params, headers=headers, timeout=20)
     resp.raise_for_status()
 
-    data = resp.json()
-    if data.get("retCode") != 0:
-        raise ValueError(
-            f"Bybit API error for {symbol}: {data.get('retMsg', 'unknown error')}"
-        )
-
-    raw_list = data["result"]["list"]
+    raw_list = resp.json()
     if not raw_list:
-        raise ValueError(f"Bybit returned empty kline list for {symbol} {interval}m")
+        raise ValueError(f"Binance returned empty kline list for {symbol} {interval}m")
 
-    # Columns: startTime, open, high, low, close, volume, turnover
+    # Binance columns: openTime, open, high, low, close, volume, closeTime, ...
     df = pd.DataFrame(raw_list, columns=[
-        "timestamp", "open", "high", "low", "close", "volume", "turnover"
+        "timestamp", "open", "high", "low", "close", "volume",
+        "close_time", "quote_volume", "trades", "taker_buy_base",
+        "taker_buy_quote", "ignore"
     ])
     df = df.astype({
         "timestamp": "int64",
@@ -126,9 +122,7 @@ def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.Dat
         "volume":    "float64",
     })
 
-    # Bybit returns newest first — reverse to chronological
-    df = df.iloc[::-1].reset_index(drop=True)
-
+    # Binance returns oldest first — already chronological
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.set_index("timestamp")
     df.index.name = "Date"
@@ -422,7 +416,7 @@ def scan_symbol_timeframe(symbol: str, interval: str) -> tuple:
     """Full pipeline for one symbol/timeframe. Returns (result, alerted, reason)."""
     log.info(f"Scanning {symbol} {interval}m ...")
 
-    # 1. Fetch OHLCV from Bybit (public endpoint, no auth needed)
+    # 1. Fetch OHLCV from Binance (public endpoint, no auth, not blocked from Actions)
     df = fetch_ohlcv(symbol, interval)
     if df.empty or len(df) < 30:
         log.warning(f"{symbol} {interval}: insufficient data ({len(df)} candles)")
