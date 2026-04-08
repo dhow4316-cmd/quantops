@@ -47,7 +47,7 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BINANCE_BASE     = "https://api.binance.com"
+BYBIT_BASE       = "https://api.bytick.com"
 TELEGRAM_TOKEN   = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT    = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY    = os.environ["ANTHROPIC_API_KEY"]
@@ -68,31 +68,31 @@ CANDLE_LIMIT         = int(os.environ.get("PHANTOM_CANDLES", "80"))
 HB_FAST = int(os.environ.get("HB_FAST", "8"))
 HB_SLOW = int(os.environ.get("HB_SLOW", "21"))
 
-# Binance kline interval map — phantom timeframe (minutes) → Binance interval string
-# Binance accepts: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
-BINANCE_INTERVAL_MAP = {
-    "15":  "15m",
-    "60":  "1h",
-    "240": "4h",
+# Bybit V5 interval map — phantom timeframe (minutes) → Bybit interval string
+# Bybit accepts: 1, 3, 5, 15, 30, 60, 120, 240, 360, 720, D, W, M
+BYBIT_INTERVAL_MAP = {
+    "15":  "15",
+    "60":  "60",
+    "240": "240",
 }
 
-# ── Binance Data ──────────────────────────────────────────────────────────────
+# ── Bybit Data ────────────────────────────────────────────────────────────────
 
 def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
     """
-    Fetch OHLCV from Binance Kline API.
-    Endpoint: GET /api/v3/klines
-    No API key required for market data.
-    No IP restrictions from GitHub Actions runners.
-    Returns up to 1000 candles per call (Binance max).
+    Fetch OHLCV from Bybit V5 Kline API.
+    Endpoint: GET /v5/market/kline
+    No auth required for market data.
+    Returns up to 200 candles per call (Bybit max).
     """
-    binance_interval = BINANCE_INTERVAL_MAP.get(interval, interval)
+    bybit_interval = BYBIT_INTERVAL_MAP.get(interval, interval)
 
-    url = f"{BINANCE_BASE}/api/v3/klines"
+    url = f"{BYBIT_BASE}/v5/market/kline"
     params = {
+        "category": "linear",          # USDT perpetual
         "symbol":   symbol.upper(),
-        "interval": binance_interval,
-        "limit":    min(limit, 1000),   # Binance max is 1000
+        "interval": bybit_interval,
+        "limit":    min(limit, 200),    # Bybit max is 200
     }
 
     headers = {
@@ -103,18 +103,23 @@ def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.Dat
     resp = requests.get(url, params=params, headers=headers, timeout=20)
     resp.raise_for_status()
 
-    raw_list = resp.json()
-    if not raw_list:
-        raise ValueError(f"Binance returned empty kline list for {symbol}")
+    data = resp.json()
+    if data.get("retCode") != 0:
+        raise ValueError(
+            f"Bybit API error for {symbol}: "
+            f"retCode={data.get('retCode')} retMsg={data.get('retMsg')}"
+        )
 
-    # Binance returns rows:
-    # [openTime, open, high, low, close, volume, closeTime,
-    #  quoteVolume, trades, takerBuyBase, takerBuyQuote, ignore]
-    df = pd.DataFrame(raw_list, columns=[
-        "timestamp", "open", "high", "low", "close", "volume",
-        "close_time", "quote_volume", "trades",
-        "taker_buy_base", "taker_buy_quote", "ignore"
-    ])
+    raw_list = data["result"]["list"]
+    if not raw_list:
+        raise ValueError(f"Bybit returned empty kline list for {symbol}")
+
+    # Bybit returns rows: [startTime, open, high, low, close, volume, turnover]
+    # Most recent candle is first — reverse so oldest is first
+    df = pd.DataFrame(
+        raw_list,
+        columns=["timestamp", "open", "high", "low", "close", "volume", "turnover"]
+    )
     df = df.astype({
         "timestamp": "int64",
         "open":      "float64",
@@ -122,6 +127,7 @@ def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.Dat
         "low":       "float64",
         "close":     "float64",
         "volume":    "float64",
+        "turnover":  "float64",
     })
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.sort_values("timestamp").reset_index(drop=True)
