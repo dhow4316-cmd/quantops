@@ -11,9 +11,10 @@ Triggers Telegram alert when:
   - Howrie Band is BLUE (red = STAND_ASIDE, no alert)
   - Pattern is confirmed (not partial)
 
+Data source: CoinGecko public API (no IP restrictions from GitHub Actions)
+NOTE: Bybit API is blocked by CloudFront CDN from GitHub Actions runner IPs.
+
 GitHub Secrets required:
-  BYBIT_API_KEY
-  BYBIT_API_SECRET
   TELEGRAM_TOKEN
   TELEGRAM_CHAT_ID
   ANTHROPIC_API_KEY
@@ -44,7 +45,7 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BYBIT_BASE      = "https://api.bybit.com"
+COINGECKO_BASE  = "https://api.coingecko.com/api/v3"
 TELEGRAM_TOKEN  = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT   = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY   = os.environ["ANTHROPIC_API_KEY"]
@@ -63,36 +64,101 @@ CANDLE_LIMIT         = int(os.environ.get("PHANTOM_CANDLES", "80"))
 HB_FAST = int(os.environ.get("HB_FAST", "8"))
 HB_SLOW = int(os.environ.get("HB_SLOW", "21"))
 
-# ── Bybit Data ────────────────────────────────────────────────────────────────
+# CoinGecko coin ID map — add more as needed
+COINGECKO_ID_MAP = {
+    "BTCUSDT":  "bitcoin",
+    "ETHUSDT":  "ethereum",
+    "SOLUSDT":  "solana",
+    "XRPUSDT":  "ripple",
+    "DOGEUSDT": "dogecoin",
+    "BNBUSDT":  "binancecoin",
+    "ADAUSDT":  "cardano",
+    "AVAXUSDT": "avalanche-2",
+    "DOTUSDT":  "polkadot",
+    "MATICUSDT":"matic-network",
+}
+
+# CoinGecko interval → days of history to request
+# Returns hourly candles for <=90 days, daily for longer
+TF_TO_DAYS = {
+    "15":  "2",    # 2 days → 5-min/hourly buckets (we resample to 15m)
+    "60":  "7",    # 7 days → hourly
+    "240": "30",   # 30 days → hourly (we resample to 4H)
+}
+
+# ── CoinGecko Data ────────────────────────────────────────────────────────────
 
 def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
-    """Fetch OHLCV from Bybit V5 API."""
-    url = f"{BYBIT_BASE}/v5/market/kline"
-    params = {
-        "category": "linear",
-        "symbol": symbol,
-        "interval": interval,
-        "limit": limit
-    }
-    resp = requests.get(url, params=params, timeout=15)
+    """
+    Fetch OHLCV from CoinGecko public API.
+    CoinGecko returns OHLC data directly via /coins/{id}/ohlc endpoint.
+    We request enough days to cover the target timeframe then trim to limit candles.
+    No API key required — works from any GitHub Actions runner IP.
+    """
+    coin_id = COINGECKO_ID_MAP.get(symbol.upper())
+    if not coin_id:
+        raise ValueError(f"No CoinGecko ID mapping for {symbol}. Add to COINGECKO_ID_MAP.")
+
+    days = TF_TO_DAYS.get(interval, "7")
+
+    # CoinGecko OHLC endpoint — returns [timestamp, open, high, low, close]
+    url = f"{COINGECKO_BASE}/coins/{coin_id}/ohlc"
+    params = {"vs_currency": "usd", "days": days}
+
+    headers = {"Accept": "application/json",
+               "User-Agent": "QUANTOPS-PHANTOM/1.0"}
+
+    resp = requests.get(url, params=params, headers=headers, timeout=20)
     resp.raise_for_status()
     data = resp.json()
 
-    if data.get("retCode") != 0:
-        raise ValueError(f"Bybit API error: {data.get('retMsg')}")
+    if not data:
+        raise ValueError(f"CoinGecko returned empty data for {coin_id}")
 
-    rows = data["result"]["list"]
-    df = pd.DataFrame(rows, columns=["timestamp", "open", "high", "low", "close", "volume", "turnover"])
+    df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close"])
     df = df.astype({
         "timestamp": "int64",
         "open": "float64", "high": "float64",
         "low": "float64",  "close": "float64",
-        "volume": "float64"
     })
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     df = df.sort_values("timestamp").reset_index(drop=True)
     df = df.set_index("timestamp")
     df.index.name = "Date"
+
+    # CoinGecko OHLC comes in 30-min buckets for <=2 days, hourly for <=30 days
+    # Resample to target interval
+    interval_min = int(interval)
+    if interval_min > 30:
+        rule = f"{interval_min}min"
+        df = df.resample(rule).agg({
+            "open":  "first",
+            "high":  "max",
+            "low":   "min",
+            "close": "last",
+        }).dropna()
+
+    # Add synthetic volume (CoinGecko OHLC has no volume; use market volume endpoint)
+    # Fetch volume separately
+    try:
+        mkt_url = f"{COINGECKO_BASE}/coins/{coin_id}/market_chart"
+        mkt_params = {"vs_currency": "usd", "days": days}
+        mkt_resp = requests.get(mkt_url, params=mkt_params,
+                                headers=headers, timeout=20)
+        mkt_resp.raise_for_status()
+        mkt_data = mkt_resp.json()
+        vol_df = pd.DataFrame(mkt_data["total_volumes"],
+                              columns=["timestamp", "volume"])
+        vol_df["timestamp"] = pd.to_datetime(vol_df["timestamp"], unit="ms", utc=True)
+        vol_df = vol_df.set_index("timestamp")
+        vol_df = vol_df.resample(f"{interval_min}min").last().dropna()
+        df = df.join(vol_df, how="left")
+        df["volume"] = df["volume"].fillna(0)
+    except Exception:
+        df["volume"] = 0.0
+
+    # Trim to limit candles
+    df = df.iloc[-limit:]
     return df
 
 # ── Howrie Band ───────────────────────────────────────────────────────────────
@@ -464,8 +530,16 @@ def main():
         f"❌ Errors       : {errors}\n"
         f"🕐 {ts}"
     )
-    send_telegram(summary_msg)
-    log.info("Scan complete.")
+    try:
+        send_telegram(summary_msg)
+        log.info("Scan complete — summary sent to Telegram.")
+    except Exception as e:
+        log.error(f"Failed to send Telegram summary: {e}")
+        log.error("Check TELEGRAM_TOKEN and TELEGRAM_CHAT_ID secrets are correctly set.")
+
+    if errors == len(SYMBOLS) * len(TIMEFRAMES):
+        log.error("All scans failed — exiting with code 1.")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
