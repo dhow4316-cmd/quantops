@@ -47,7 +47,7 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BYBIT_BASE       = "https://api.bybit.com"
+BYBIT_BASE       = "https://api.bytick.com"
 TELEGRAM_TOKEN   = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT    = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY    = os.environ["ANTHROPIC_API_KEY"]
