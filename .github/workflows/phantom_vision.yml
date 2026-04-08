@@ -1,0 +1,70 @@
+name: PHANTOM Vision Scanner
+
+on:
+  schedule:
+    # Runs every 4 hours — adjust to your preferred cadence
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Comma-separated symbols (e.g. BTCUSDT,ETHUSDT)"
+        required: false
+        default: "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,DOGEUSDT"
+      timeframes:
+        description: "Comma-separated intervals in minutes (15,60,240)"
+        required: false
+        default: "15,60,240"
+      confidence:
+        description: "Confidence threshold 0.0-1.0"
+        required: false
+        default: "0.75"
+
+jobs:
+  phantom-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: phantom-${{ runner.os }}-${{ hashFiles('**/requirements-phantom.txt') }}
+          restore-keys: |
+            phantom-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install anthropic mplfinance pandas numpy requests matplotlib
+
+      - name: Run PHANTOM Vision Scan
+        env:
+          BYBIT_API_KEY:      ${{ secrets.BYBIT_API_KEY }}
+          BYBIT_API_SECRET:   ${{ secrets.BYBIT_API_SECRET }}
+          TELEGRAM_TOKEN:     ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          PHANTOM_SYMBOLS:    ${{ github.event.inputs.symbols || 'BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,DOGEUSDT' }}
+          PHANTOM_TIMEFRAMES: ${{ github.event.inputs.timeframes || '15,60,240' }}
+          PHANTOM_CONFIDENCE: ${{ github.event.inputs.confidence || '0.75' }}
+          PHANTOM_CANDLES:    "80"
+          HB_FAST:            "8"
+          HB_SLOW:            "21"
+        run: python phantom_vision.py
+
+      - name: Upload chart artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-debug-charts
+          path: "*.png"
+          retention-days: 3
