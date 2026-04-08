@@ -28,6 +28,7 @@ import json
 import base64
 import logging
 import requests
+from pybit.unified_trading import HTTP as BybitHTTP
 import numpy as np
 import pandas as pd
 import mplfinance as mpf
@@ -47,12 +48,18 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BYBIT_BASE       = "https://api.bybit.com"   # Fixed: was api.bytick.com
 TELEGRAM_TOKEN   = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT    = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY    = os.environ["ANTHROPIC_API_KEY"]
 BYBIT_API_KEY    = os.environ.get("BYBIT_API_KEY", "")
 BYBIT_API_SECRET = os.environ.get("BYBIT_API_SECRET", "")
+
+# Pybit session — handles CDN/auth headers automatically
+bybit_session = BybitHTTP(
+    testnet=False,
+    api_key=BYBIT_API_KEY,
+    api_secret=BYBIT_API_SECRET,
+)
 
 SYMBOLS = os.environ.get(
     "PHANTOM_SYMBOLS",
@@ -80,37 +87,25 @@ BYBIT_INTERVAL_MAP = {
 
 def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
     """
-    Fetch OHLCV from Bybit V5 Kline API.
-    Endpoint: GET /v5/market/kline
-    No auth required for market data.
-    Returns up to 200 candles per call (Bybit max).
+    Fetch OHLCV via pybit SDK (bypasses CloudFront CDN block on GitHub Actions).
+    Uses unified_trading.HTTP which handles headers/auth automatically.
     """
     bybit_interval = BYBIT_INTERVAL_MAP.get(interval, interval)
 
-    url = f"{BYBIT_BASE}/v5/market/kline"
-    params = {
-        "category": "linear",          # USDT perpetual
-        "symbol":   symbol.upper(),
-        "interval": bybit_interval,
-        "limit":    min(limit, 200),    # Bybit max is 200
-    }
+    resp = bybit_session.get_kline(
+        category="linear",
+        symbol=symbol.upper(),
+        interval=bybit_interval,
+        limit=min(limit, 200),
+    )
 
-    headers = {
-        "Accept":     "application/json",
-        "User-Agent": "QUANTOPS-PHANTOM/1.0",
-    }
-
-    resp = requests.get(url, params=params, headers=headers, timeout=20)
-    resp.raise_for_status()
-
-    data = resp.json()
-    if data.get("retCode") != 0:
+    if resp.get("retCode") != 0:
         raise ValueError(
             f"Bybit API error for {symbol}: "
-            f"retCode={data.get('retCode')} retMsg={data.get('retMsg')}"
+            f"retCode={resp.get('retCode')} retMsg={resp.get('retMsg')}"
         )
 
-    raw_list = data["result"]["list"]
+    raw_list = resp["result"]["list"]
     if not raw_list:
         raise ValueError(f"Bybit returned empty kline list for {symbol}")
 
