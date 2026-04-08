@@ -11,9 +11,8 @@ Triggers Telegram alert when:
   - Howrie Band is BLUE (red = STAND_ASIDE, no alert)
   - Pattern is confirmed (not partial)
 
-Data source: Binance public kline API (no auth required, not geo-blocked from GitHub Actions)
-NOTE: Bybit blocks ALL GitHub Actions IPs via CloudFront (both authenticated and public endpoints).
-      Binance website/app is geo-restricted in AU but the REST API is not blocked from US-based runners.
+Data source: CoinGecko public API (no IP restrictions from GitHub Actions)
+NOTE: Bybit API is blocked by CloudFront CDN from GitHub Actions runner IPs.
 
 GitHub Secrets required:
   TELEGRAM_TOKEN
@@ -26,7 +25,6 @@ import io
 import json
 import base64
 import logging
-import time
 import requests
 import numpy as np
 import pandas as pd
@@ -47,7 +45,7 @@ logging.basicConfig(
 log = logging.getLogger("PHANTOM")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-BINANCE_BASE    = "https://api.binance.com"
+COINGECKO_BASE  = "https://api.coingecko.com/api/v3"
 TELEGRAM_TOKEN  = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT   = os.environ["TELEGRAM_CHAT_ID"]
 ANTHROPIC_KEY   = os.environ["ANTHROPIC_API_KEY"]
@@ -62,89 +60,123 @@ TIMEFRAMES = os.environ.get("PHANTOM_TIMEFRAMES", "15,60,240").split(",")
 CONFIDENCE_THRESHOLD = float(os.environ.get("PHANTOM_CONFIDENCE", "0.75"))
 CANDLE_LIMIT         = int(os.environ.get("PHANTOM_CANDLES", "80"))
 
-# Howrie Band EMA periods
+# Howrie Band EMA periods (adjust to match your indicator)
 HB_FAST = int(os.environ.get("HB_FAST", "8"))
 HB_SLOW = int(os.environ.get("HB_SLOW", "21"))
 
-# Binance interval map: our minutes string → Binance interval param
-BINANCE_INTERVAL_MAP = {
-    "15":  "15m",
-    "60":  "1h",
-    "240": "4h",
+# CoinGecko coin ID map — add more as needed
+COINGECKO_ID_MAP = {
+    "BTCUSDT":  "bitcoin",
+    "ETHUSDT":  "ethereum",
+    "SOLUSDT":  "solana",
+    "XRPUSDT":  "ripple",
+    "DOGEUSDT": "dogecoin",
+    "BNBUSDT":  "binancecoin",
+    "ADAUSDT":  "cardano",
+    "AVAXUSDT": "avalanche-2",
+    "DOTUSDT":  "polkadot",
+    "MATICUSDT":"matic-network",
 }
 
-# ── Binance Kline Data ────────────────────────────────────────────────────────
+# CoinGecko interval → days of history to request
+# Returns hourly candles for <=90 days, daily for longer
+TF_TO_DAYS = {
+    "15":  "2",    # 2 days → 5-min/hourly buckets (we resample to 15m)
+    "60":  "7",    # 7 days → hourly
+    "240": "30",   # 30 days → hourly (we resample to 4H)
+}
+
+# ── CoinGecko Data ────────────────────────────────────────────────────────────
 
 def fetch_ohlcv(symbol: str, interval: str, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
     """
-    Fetch OHLCV from Binance public kline endpoint.
-    No API key required — fully public market data.
-    GitHub Actions runners are US-based and not geo-blocked by Binance API.
-    Note: Binance website/app is geo-restricted in AU, but the REST API is not.
-
-    Binance kline returns rows of:
-    [openTime, open, high, low, close, volume, closeTime, ...]
-    Returned oldest-first — no reversal needed.
+    Fetch OHLCV from CoinGecko public API.
+    CoinGecko returns OHLC data directly via /coins/{id}/ohlc endpoint.
+    We request enough days to cover the target timeframe then trim to limit candles.
+    No API key required — works from any GitHub Actions runner IP.
     """
-    binance_interval = BINANCE_INTERVAL_MAP.get(interval, f"{interval}m")
+    coin_id = COINGECKO_ID_MAP.get(symbol.upper())
+    if not coin_id:
+        raise ValueError(f"No CoinGecko ID mapping for {symbol}. Add to COINGECKO_ID_MAP.")
 
-    url = f"{BINANCE_BASE}/api/v3/klines"
-    params = {
-        "symbol":   symbol.upper(),
-        "interval": binance_interval,
-        "limit":    min(limit, 1000),  # Binance max per request = 1000
-    }
+    days = TF_TO_DAYS.get(interval, "7")
 
-    headers = {
-        "Accept":     "application/json",
-        "User-Agent": "QUANTOPS-PHANTOM/1.0"
-    }
+    # CoinGecko OHLC endpoint — returns [timestamp, open, high, low, close]
+    url = f"{COINGECKO_BASE}/coins/{coin_id}/ohlc"
+    params = {"vs_currency": "usd", "days": days}
+
+    headers = {"Accept": "application/json",
+               "User-Agent": "QUANTOPS-PHANTOM/1.0"}
 
     resp = requests.get(url, params=params, headers=headers, timeout=20)
     resp.raise_for_status()
+    data = resp.json()
 
-    raw_list = resp.json()
-    if not raw_list:
-        raise ValueError(f"Binance returned empty kline list for {symbol} {interval}m")
+    if not data:
+        raise ValueError(f"CoinGecko returned empty data for {coin_id}")
 
-    # Binance columns: openTime, open, high, low, close, volume, closeTime, ...
-    df = pd.DataFrame(raw_list, columns=[
-        "timestamp", "open", "high", "low", "close", "volume",
-        "close_time", "quote_volume", "trades", "taker_buy_base",
-        "taker_buy_quote", "ignore"
-    ])
+    df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close"])
     df = df.astype({
         "timestamp": "int64",
-        "open":      "float64",
-        "high":      "float64",
-        "low":       "float64",
-        "close":     "float64",
-        "volume":    "float64",
+        "open": "float64", "high": "float64",
+        "low": "float64",  "close": "float64",
     })
-
-    # Binance returns oldest first — already chronological
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+    df = df.sort_values("timestamp").reset_index(drop=True)
     df = df.set_index("timestamp")
     df.index.name = "Date"
 
-    df = df[["open", "high", "low", "close", "volume"]]
+    # CoinGecko OHLC comes in 30-min buckets for <=2 days, hourly for <=30 days
+    # Resample to target interval
+    interval_min = int(interval)
+    if interval_min > 30:
+        rule = f"{interval_min}min"
+        df = df.resample(rule).agg({
+            "open":  "first",
+            "high":  "max",
+            "low":   "min",
+            "close": "last",
+        }).dropna()
+
+    # Add synthetic volume (CoinGecko OHLC has no volume; use market volume endpoint)
+    # Fetch volume separately
+    try:
+        mkt_url = f"{COINGECKO_BASE}/coins/{coin_id}/market_chart"
+        mkt_params = {"vs_currency": "usd", "days": days}
+        mkt_resp = requests.get(mkt_url, params=mkt_params,
+                                headers=headers, timeout=20)
+        mkt_resp.raise_for_status()
+        mkt_data = mkt_resp.json()
+        vol_df = pd.DataFrame(mkt_data["total_volumes"],
+                              columns=["timestamp", "volume"])
+        vol_df["timestamp"] = pd.to_datetime(vol_df["timestamp"], unit="ms", utc=True)
+        vol_df = vol_df.set_index("timestamp")
+        vol_df = vol_df.resample(f"{interval_min}min").last().dropna()
+        df = df.join(vol_df, how="left")
+        df["volume"] = df["volume"].fillna(0)
+    except Exception:
+        df["volume"] = 0.0
+
+    # Trim to limit candles
     df = df.iloc[-limit:]
     return df
 
 # ── Howrie Band ───────────────────────────────────────────────────────────────
 
-def compute_howrie_band(df: pd.DataFrame) -> tuple:
+def compute_howrie_band(df: pd.DataFrame) -> tuple[pd.Series, str]:
     """
     Compute Howrie Band using dual EMA crossover.
-    Returns (band_series, color, fast_ema, slow_ema).
+    Returns (band_series, color) where color is 'blue' or 'red'.
     Fast EMA above Slow EMA = blue (long/hold).
-    Fast EMA below Slow EMA = red (exit immediately — QUANTOPS locked rule).
+    Fast EMA below Slow EMA = red (exit immediately).
     """
     fast_ema = df["close"].ewm(span=HB_FAST, adjust=False).mean()
     slow_ema = df["close"].ewm(span=HB_SLOW, adjust=False).mean()
 
+    # Use fast EMA as the band line
     band = fast_ema
 
+    # Color determined by last crossover state
     last_fast = fast_ema.iloc[-1]
     last_slow = slow_ema.iloc[-1]
     color = "blue" if last_fast >= last_slow else "red"
@@ -163,8 +195,9 @@ def render_chart_png(
 ) -> bytes:
     """
     Render candlestick chart with Howrie Band overlay to PNG bytes.
+    Returns raw PNG bytes.
     """
-    hb_color   = "#2196F3" if band_color == "blue" else "#F44336"
+    hb_color  = "#2196F3" if band_color == "blue" else "#F44336"
     slow_color = "#FF9800"
 
     apds = [
@@ -176,6 +209,7 @@ def render_chart_png(
 
     tf_label = {
         "15": "15m", "60": "1H", "240": "4H",
+        "D": "Daily", "W": "Weekly"
     }.get(interval, interval)
 
     title = f"PHANTOM | {symbol} {tf_label} | Howrie Band: {band_color.upper()}"
@@ -190,9 +224,9 @@ def render_chart_png(
         y_on_right=True,
         rc={
             "axes.labelcolor": "#cccccc",
-            "xtick.color":     "#cccccc",
-            "ytick.color":     "#cccccc",
-            "text.color":      "#cccccc",
+            "xtick.color": "#cccccc",
+            "ytick.color": "#cccccc",
+            "text.color": "#cccccc",
         }
     )
 
@@ -209,6 +243,7 @@ def render_chart_png(
         tight_layout=True,
     )
 
+    # Add Howrie Band color indicator box
     patch_color = "#2196F3" if band_color == "blue" else "#F44336"
     patch = mpatches.Patch(color=patch_color,
                            label=f"Howrie Band: {band_color.upper()}")
@@ -273,15 +308,15 @@ def claude_vision_analyze(png_bytes: bytes) -> dict:
     b64 = base64.standard_b64encode(png_bytes).decode("utf-8")
 
     headers = {
-        "x-api-key":         ANTHROPIC_KEY,
+        "x-api-key": ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
-        "content-type":      "application/json"
+        "content-type": "application/json"
     }
 
     payload = {
-        "model":      "claude-opus-4-6",   # ← fixed: was "claude-opus-4-5" (invalid)
+        "model": "claude-opus-4-5",
         "max_tokens": 1024,
-        "system":     PHANTOM_SYSTEM,
+        "system": PHANTOM_SYSTEM,
         "messages": [
             {
                 "role": "user",
@@ -289,9 +324,9 @@ def claude_vision_analyze(png_bytes: bytes) -> dict:
                     {
                         "type": "image",
                         "source": {
-                            "type":       "base64",
+                            "type": "base64",
                             "media_type": "image/png",
-                            "data":       b64
+                            "data": b64
                         }
                     },
                     {
@@ -323,14 +358,14 @@ def claude_vision_analyze(png_bytes: bytes) -> dict:
 
 # ── Alert Logic ───────────────────────────────────────────────────────────────
 
-def should_alert(result: dict) -> tuple:
+def should_alert(result: dict) -> tuple[bool, str]:
     """Apply QUANTOPS rules to determine if Telegram alert fires."""
     action = result.get("phantom_action", "INVALID")
     band   = result.get("howrie_band_color", "unclear")
     conf   = result.get("confidence", 0.0)
     note   = result.get("phantom_note", "")
 
-    # Locked QUANTOPS rule: red band overrides everything (confirmed ATH/USDT Apr 2 2026)
+    # Locked QUANTOPS rule: red band overrides everything
     if band == "red":
         return False, f"STAND_ASIDE — Red Howrie Band active. {note}"
 
@@ -349,19 +384,21 @@ def send_telegram(message: str, png_bytes: Optional[bytes] = None) -> None:
     base_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
     if png_bytes:
-        files = {"photo": ("chart.png", io.BytesIO(png_bytes), "image/png")}
-        data  = {"chat_id": TELEGRAM_CHAT, "caption": message, "parse_mode": "HTML"}
-        resp  = requests.post(f"{base_url}/sendPhoto", data=data, files=files, timeout=30)
+        files  = {"photo": ("chart.png", io.BytesIO(png_bytes), "image/png")}
+        data   = {"chat_id": TELEGRAM_CHAT, "caption": message, "parse_mode": "HTML"}
+        resp   = requests.post(f"{base_url}/sendPhoto", data=data, files=files, timeout=30)
     else:
-        data  = {"chat_id": TELEGRAM_CHAT, "text": message, "parse_mode": "HTML"}
-        resp  = requests.post(f"{base_url}/sendMessage", data=data, timeout=30)
+        data   = {"chat_id": TELEGRAM_CHAT, "text": message, "parse_mode": "HTML"}
+        resp   = requests.post(f"{base_url}/sendMessage", data=data, timeout=30)
 
     resp.raise_for_status()
     log.info("Telegram sent OK")
 
 def format_alert(symbol: str, interval: str, result: dict) -> str:
     """Format the Telegram alert message."""
-    tf_label = {"15": "15m", "60": "1H", "240": "4H"}.get(interval, interval)
+    tf_label = {
+        "15": "15m", "60": "1H", "240": "4H"
+    }.get(interval, interval)
 
     band      = result.get("howrie_band_color", "unclear").upper()
     band_icon = "🔵" if band == "BLUE" else "🔴" if band == "RED" else "⚪"
@@ -412,14 +449,14 @@ def format_summary_line(symbol: str, interval: str, result: dict, fired: bool) -
 
 # ── Main Scanner ──────────────────────────────────────────────────────────────
 
-def scan_symbol_timeframe(symbol: str, interval: str) -> tuple:
+def scan_symbol_timeframe(symbol: str, interval: str) -> tuple[dict, bool, str]:
     """Full pipeline for one symbol/timeframe. Returns (result, alerted, reason)."""
     log.info(f"Scanning {symbol} {interval}m ...")
 
-    # 1. Fetch OHLCV from Binance (public endpoint, no auth, not blocked from Actions)
+    # 1. Fetch OHLCV
     df = fetch_ohlcv(symbol, interval)
     if df.empty or len(df) < 30:
-        log.warning(f"{symbol} {interval}: insufficient data ({len(df)} candles)")
+        log.warning(f"{symbol} {interval}: insufficient data")
         return {}, False, "insufficient data"
 
     # 2. Compute Howrie Band
@@ -430,9 +467,9 @@ def scan_symbol_timeframe(symbol: str, interval: str) -> tuple:
 
     # 4. Claude Vision analysis
     result = claude_vision_analyze(png_bytes)
-    result["symbol"]              = symbol
-    result["interval"]            = interval
-    result["howrie_band_computed"] = band_color  # sanity check vs Claude's read
+    result["symbol"]   = symbol
+    result["interval"] = interval
+    result["howrie_band_computed"] = band_color  # our own compute as sanity check
 
     log.info(
         f"{symbol} {interval} → pattern={result.get('pattern_type')} "
@@ -464,7 +501,6 @@ def main():
     summary_lines = []
     alerts_fired  = 0
     errors        = 0
-    total_scans   = len(SYMBOLS) * len(TIMEFRAMES)
 
     for symbol in SYMBOLS:
         symbol = symbol.strip()
@@ -477,8 +513,6 @@ def main():
                     summary_lines.append(line)
                     if fired:
                         alerts_fired += 1
-                # Small delay between scans to avoid any rate limiting
-                time.sleep(0.3)
             except Exception as e:
                 log.error(f"ERROR {symbol} {interval}: {e}")
                 summary_lines.append(f"❌ {symbol:<12} {interval:<4} | ERROR: {e}")
@@ -503,7 +537,7 @@ def main():
         log.error(f"Failed to send Telegram summary: {e}")
         log.error("Check TELEGRAM_TOKEN and TELEGRAM_CHAT_ID secrets are correctly set.")
 
-    if errors == total_scans:
+    if errors == len(SYMBOLS) * len(TIMEFRAMES):
         log.error("All scans failed — exiting with code 1.")
         raise SystemExit(1)
 
