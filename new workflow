@@ -1,0 +1,13 @@
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: "3.12"
+ 
+  - name: Install dependencies
+    run: pip install pybit
+ 
+  - name: Run Bybit derivatives check
+    env:
+      BYBIT_API_KEY: ${{ secrets.BYBIT_API_KEY }}
+      BYBIT_API_SECRET: ${{ secrets.BYBIT_API_SECRET }}
+    run: python bybit_derivatives_client.py
